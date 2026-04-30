@@ -69,3 +69,33 @@ Record stable results in `agent_docs/rounds/` first. Promote report-ready summar
 
 Round06 is planned as a comparison-table-driven stage. See
 `docs/round06_plan.md` for the table schema and stage order.
+
+Build the current comparison table:
+
+```bash
+PYTHONPATH=src python experiments/analysis/build_round06_comparison_table.py \
+  --output outputs/round06/comparison_table.csv
+```
+
+Mine task-aware hard negatives:
+
+```bash
+PYTHONPATH=src python experiments/rerank/mine_task_aware_negatives.py \
+  --candidate-pool outputs/round05_top100/train-bm25-top100.json \
+  --output-dir outputs/round06 \
+  --negatives-per-claim 10 \
+  --batch-size 128
+```
+
+Build classifier-ready evidence packages:
+
+```bash
+PYTHONPATH=src python experiments/classification/build_evidence_package.py \
+  --claims data/dev-claims.json \
+  --final-predictions outputs/round05/dev-msmarco-minilm-zero-shot-top3.json \
+  --context-predictions outputs/round05/dev-msmarco-minilm-zero-shot-extra-top20.json \
+  --final-top-k 3 \
+  --context-top-k 20 \
+  --include-semantic \
+  --output outputs/round06/dev-classifier-context-minilm-top20-semantic.jsonl
+```

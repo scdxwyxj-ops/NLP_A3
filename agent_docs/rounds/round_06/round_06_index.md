@@ -16,7 +16,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 ## 二、本轮当前状态
 
 - 状态：`规划中`
-- 当前 stage：`Stage A：baseline consolidation and table scaffold`
+- 当前 stage：`Stage A-E 已完成初版；等待 final synthesis 或进入 classifier baseline`
 - 依赖：
   - Round05 已完成 zero-shot MiniLM reranker baseline。
   - 当前最佳 evidence retrieval：MiniLM zero-shot top-3 dev F-score `0.1642`。
@@ -28,7 +28,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 
 ### Stage A：Baseline consolidation and table scaffold
 
-状态：`待开始`
+状态：`已完成初版`
 
 目标：
 - 建立 Round06 final comparison table schema。
@@ -42,7 +42,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 
 ### Stage B：Task-aware hard negatives
 
-状态：`待开始`
+状态：`已完成初版`
 
 目标：
 - 用 zero-shot MiniLM 在 train candidate pool 上排序。
@@ -57,7 +57,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 
 ### Stage C：Task-aware reranker training comparison
 
-状态：`待开始`
+状态：`已完成初版`
 
 目标：
 - 用 task-aware negatives 重新训练 single-logit MiniLM reranker。
@@ -70,7 +70,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 
 ### Stage D：Fine-grained semantic extraction
 
-状态：`待开始`
+状态：`已完成初版`
 
 目标：
 - 从 claim 和 evidence 中提取更细粒度语义信息。
@@ -90,7 +90,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 
 ### Stage E：Classifier-oriented evidence packaging
 
-状态：`待开始`
+状态：`已完成初版`
 
 目标：
 - 区分 final evidence output 和 classifier input。
@@ -147,3 +147,13 @@ classifier input: MiniLM top-10/top-20/top-50 + semantic feature summary
 - `.agent/backlog.md`
 - `.agent/handoff_to_agent_loop.md`
 - Report B：`agent_docs/rounds/round_06/round_06_report_b_stage_plan_and_table_schema.md`
+- Report C：`agent_docs/rounds/round_06/round_06_report_c_execution_results.md`
+
+## 七、当前结果快照
+
+- `outputs/round06/comparison_table.csv` 已生成，当前 `10` 行。
+- task-aware negatives：`16402` pairs，其中 positive `4122`，negative `12280`。
+- task-aware MiniLM top-3 F-score：`0.1599`，接近但未超过 zero-shot MiniLM top-3 `0.1642`。
+- classifier-ready packages 已生成：
+  - `outputs/round06/train-classifier-context-minilm-top20-semantic.jsonl`
+  - `outputs/round06/dev-classifier-context-minilm-top20-semantic.jsonl`
