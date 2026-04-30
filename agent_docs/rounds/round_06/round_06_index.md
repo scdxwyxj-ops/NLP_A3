@@ -16,16 +16,31 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 ## 二、本轮当前状态
 
 - 状态：`规划中`
-- 当前 stage：`Stage A：task-aware improvement plan`
+- 当前 stage：`Stage A：baseline consolidation and table scaffold`
 - 依赖：
   - Round05 已完成 zero-shot MiniLM reranker baseline。
   - 当前最佳 evidence retrieval：MiniLM zero-shot top-3 dev F-score `0.1642`。
   - 当前候选召回瓶颈：BM25 top-50 dev recall `0.3249`，BM25 top-100 dev recall `0.4188`。
 - 当前判断：下一步最有机会的提升来自 task-aware hard negatives 和更细粒度语义辅助特征。
+- 最终产物：`round_06_report_final_comparison.md` + `outputs/round06/comparison_table.csv`。
 
 ## 三、Stage 划分
 
-### Stage A：Task-aware hard negatives
+### Stage A：Baseline consolidation and table scaffold
+
+状态：`待开始`
+
+目标：
+- 建立 Round06 final comparison table schema。
+- 把 Round05 baseline rows 整理进去。
+- 明确每个指标来源和 pending 项。
+
+验收指标：
+- 表格 schema 固定。
+- BM25、zero-shot MiniLM、Round05 BCE MiniLM baseline 已入表。
+- 后续实验只追加行，不临时改指标口径。
+
+### Stage B：Task-aware hard negatives
 
 状态：`待开始`
 
@@ -40,7 +55,20 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 - 重新训练 single-logit BCE reranker。
 - 和 zero-shot MiniLM、Round05 BCE fine-tuning 对比。
 
-### Stage B：Fine-grained semantic extraction
+### Stage C：Task-aware reranker training comparison
+
+状态：`待开始`
+
+目标：
+- 用 task-aware negatives 重新训练 single-logit MiniLM reranker。
+- 和 zero-shot MiniLM、Round05 BCE MiniLM 对比。
+
+验收指标：
+- 至少一个 conservative variant 完成。
+- 记录 top-3/top-5 F-score、top-10/top-20 recall、REFUTES recall。
+- 结果无论好坏都写入 comparison table。
+
+### Stage D：Fine-grained semantic extraction
 
 状态：`待开始`
 
@@ -60,7 +88,7 @@ Round06 的目标是解决 Round05 暴露出的核心问题：
 - 输出 claim/evidence 的 semantic feature JSONL。
 - 至少用于 error analysis 或 classifier input formatting。
 
-### Stage C：Classifier-oriented evidence packaging
+### Stage E：Classifier-oriented evidence packaging
 
 状态：`待开始`
 
@@ -78,6 +106,19 @@ classifier input: MiniLM top-10/top-20/top-50 + semantic feature summary
 - 生成 classifier-ready dataset。
 - 对 top-k context 做 ablation。
 - 记录 label accuracy 和 harmonic mean。
+
+### Stage F：Final synthesis
+
+状态：`待开始`
+
+目标：
+- 生成最终 Round06 对比报告。
+- 明确 Round07 classifier 的推荐输入。
+
+验收指标：
+- `round_06_report_final_comparison.md` 完成。
+- `outputs/round06/comparison_table.csv` 完成。
+- 有下一步 classifier task handoff。
 
 ## 四、本轮成功标准
 
@@ -97,3 +138,12 @@ classifier input: MiniLM top-10/top-20/top-50 + semantic feature summary
 2. 重训 single-logit BCE reranker。
 3. 做 claim/evidence semantic feature extraction prototype。
 4. 进入 classifier baseline。
+
+## 六、Discovery planning outputs
+
+- `.agent/mission.md`
+- `.agent/requirements.md`
+- `.agent/plan.md`
+- `.agent/backlog.md`
+- `.agent/handoff_to_agent_loop.md`
+- Report B：`agent_docs/rounds/round_06/round_06_report_b_stage_plan_and_table_schema.md`

@@ -64,3 +64,8 @@ Current dataset-build stats:
 ## Recording Results
 
 Record stable results in `agent_docs/rounds/` first. Promote report-ready summaries into `docs/` when they become useful for teammates.
+
+## Round06 Planning
+
+Round06 is planned as a comparison-table-driven stage. See
+`docs/round06_plan.md` for the table schema and stage order.

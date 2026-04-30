@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "default_source_policy": "prefer_primary_sources",
+  "forbidden_runtime_paths": [
+    ".git/",
+    ".venv/",
+    "venv/",
+    "env/",
+    "node_modules/",
+    "**pycache**/",
+    ".mypy_cache/",
+    ".pytest_cache/",
+    "checkpoints/",
+    "weights/",
+    "models/",
+    "outputs/",
+    "wandb/",
+    "mlruns/",
+    "data/",
+    "datasets/",
+    "secrets/"
+  ],
+  "forbidden_file_patterns": [
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.onnx",
+    "*.safetensors",
+    "*.pkl",
+    "*.pickle"
+  ],
+  "default_outputs": [
+    ".agent/mission.md",
+    ".agent/research_notes.md",
+    ".agent/requirements.md",
+    ".agent/plan.md",
+    ".agent/backlog.md",
+    ".agent/unknowns.md",
+    ".agent/source_register.json",
+    ".agent/handoff_to_agent_loop.md"
+  ]
+}
