@@ -1,0 +1,4 @@
+skills:
+  - name: repo_agent_skill
+    path: repo_agent_skill.md
+    description: Project-specific operating notes for COMP90042 A3.

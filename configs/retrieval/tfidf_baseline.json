@@ -1,0 +1,10 @@
+{
+  "train": "data/train-claims.json",
+  "claims": "data/dev-claims.json",
+  "evidence": "data/evidence.json",
+  "eval_script": "eval.py",
+  "output": "outputs/round04/dev-tfidf.json",
+  "top_k_values": [1, 3, 5, 10, 20],
+  "max_features": 200000
+}
+

@@ -1,0 +1,19 @@
+[project]
+name = "comp90042-a3"
+version = "0.1.0"
+description = "COMP90042 Assignment 3 fact-checking pipeline experiments"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "scikit-learn",
+]
+
+[project.optional-dependencies]
+rerank = [
+  "torch",
+  "transformers",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
