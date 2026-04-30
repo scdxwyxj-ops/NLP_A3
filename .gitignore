@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local course data and generated artifacts.
+data/*.json
+outputs/
+models/
+
+# Notebook checkpoints and OS files.
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
