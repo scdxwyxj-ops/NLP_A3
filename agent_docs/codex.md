@@ -1,13 +1,13 @@
 # COMP90042 A3 Agent Memory
 
-一句话概括：本项目是 COMP90042 Assignment 3 的团队 NLP fact-checking project；当前最重要事项是进入 Round06，把 Round05 的 reranker baseline 改造成更 task-aware 的 evidence preprocessing，再服务最终 classifier。
+一句话概括：本项目是 COMP90042 Assignment 3 的团队 NLP fact-checking project；Round07 retrieval rescue 已达成目标，当前进入 Round08：定位 top500/top20/top3 的损失层，并优化 reranking / evidence selection / classifier aggregation。
 
 ## 当前状态
 - 项目名称：`COMP90042 A3 NLP Project`
-- 当前阶段：`Round06 / Task-aware reranking and semantic evidence features`
-- 当前目标：用 MiniLM-mined hard negatives 和细粒度语义特征，提高 evidence context 对最终 classifier 的价值。
-- 当前第一优先级：生成 task-aware hard negatives，重新 fine-tune single-logit MiniLM reranker，并准备 classifier-ready top-k evidence context。
-- 当前主要阻塞：沟通侧等待 Kaitlyn 给 `jevorianx@gmail.com` 的 Drive access；技术侧需要避免和 Kaitlyn 已做内容重复。
+- 当前阶段：`Round10 / Neural verification baselines`
+- 当前目标：补齐 neural baseline，验证当前瓶颈是否来自 relevance-style reranking，而不是 fact verification / stance detection。
+- 当前第一优先级：Round10 完整实验已完成；下一步应将 final decoupled pipeline 固化到最终 notebook / submission pipeline。
+- 当前主要阻塞：Verifier pair-level 有信号，但直接用于 top3 evidence rerank 很弱；final evidence 仍应使用 Round09 blend。
 
 ## 当前范围
 需要完成：
@@ -34,6 +34,8 @@
 - `agent_docs/rounds/round_04/`：TF-IDF retrieval baseline 和后续 retrieval 诊断记录。
 - `agent_docs/rounds/round_05/`：BM25 + MiniLM reranker、recall 和错误分析记录。
 - `agent_docs/rounds/round_06/`：task-aware negatives、semantic evidence features 和 classifier-oriented evidence packaging 计划。
+- `agent_docs/rounds/round_07/`：candidate recall rescue、sparse RRF union、top500 MiniLM reranking 和 classifier baseline。
+- `agent_docs/rounds/round_08/`：Round08 requirements 消化、模糊建议筛选和 reranker/classifier 下一步计划。
 - `data/`：课程数据文件；最终 zip 不应包含这些数据文件。
 - `configs/`：实验配置。
 - `docs/`：面向队友和最终报告的稳定项目文档。
@@ -98,7 +100,75 @@
 - 当前目标：用模型排序挖更有效 hard negatives，并探索更细粒度语义提取作为 reranker/classifier 辅助输入。
 - 当前判断：短期优先 MiniLM-mined task-aware hard negatives；中期加入 entities/quantities/relations/negation 等语义摘要。
 
+### Round07：Retrieval recall rescue and classifier context
+- Index：`agent_docs/rounds/round_07/round_07_index.md`
+- Requirement：`agent_docs/rounds/round_07/requirement.md`
+- 报告：
+  - `agent_docs/rounds/round_07/round_07_report_a_discovery_stage_plan.md`
+  - `agent_docs/rounds/round_07/round_07_report_b_candidate_recall_results.md`
+  - `agent_docs/rounds/round_07/round_07_report_c_rerank_results.md`
+  - `agent_docs/rounds/round_07/round_07_report_d_classifier_context_and_baseline.md`
+  - `agent_docs/rounds/round_07/round_07_report_e_query_boost_ablation.md`
+  - `agent_docs/rounds/round_07/round_07_report_f_acceptance_summary.md`
+- 当前状态：`已结轮；Stage A-D 完成，Stage E 部分完成，Stage F query-boost ablation 完成，Stage G 验收总结完成`
+- 关键结果：
+  - BM25 top500 dev candidate macro recall `0.5861`
+  - char TF-IDF top500 dev candidate macro recall `0.6610`
+  - RRF(BM25, char TF-IDF) top500 dev candidate macro recall `0.6579`
+  - RRF(BM25, char TF-IDF) top500 + zero-shot MiniLM top3 dev evidence F-score `0.1987`
+  - RRF(BM25, char TF-IDF) top500 + zero-shot MiniLM top20 dev macro recall `0.4540`
+  - best quick concat classifier baseline: top50 plain TF-IDF logistic regression accuracy `0.4610`, macro-F1 `0.4242`
+  - query-boost supplement top3 dev evidence F-score `0.1927`，低于当前默认；仅在一个候选池中把 `REFUTES` candidate recall 从 `0.5926` 提到 `0.6111`
+- 当前判断：retrieval rescue 有效，已经超过旧 best F-score `0.1642`；query-boost 不应替换默认方案；下一步不要再做简单 concat classifier，应做 evidence-wise verifier/aggregation 或 transformer classifier。
+
+### Round08：Reranking and classifier aggregation planning
+- Index：`agent_docs/rounds/round_08/round_08_index.md`
+- Requirement：`agent_docs/rounds/round_08/requirements.md`
+- Updated requirement：`agent_docs/rounds/round_08/requirements_updated.md`
+- 报告：
+  - `agent_docs/rounds/round_08/round_08_report_a_execution_and_acceptance.md`
+- Discussions：
+  - `agent_docs/rounds/round_08/discussions/discussion_2026-05-01_requirements_response.md`
+- 当前状态：`本轮验收完成`
+- 当前判断：
+  - Round08 主瓶颈不是 first-stage candidate hit-any，而是 reranking / evidence selection。
+  - 优先做 error layer analysis，把错误拆成 `gold not in top500`、`gold in top500 but not top20`、`gold in top20 but not top3`、`gold in context but label wrong`。
+  - 已完成 error layer analysis、feature table construction、feature fusion reranker、classifier context update。
+  - Fusion GBDT top3 evidence F-score `0.2011`，略高于 MiniLM-only `0.1987`。
+  - Fusion GBDT top20 macro recall `0.4669`，高于 MiniLM-only `0.4540`。
+  - Fusion GBDT top50 context + TF-IDF logreg classifier accuracy `0.4675`，macro-F1 `0.4376`，harmonic mean `0.2812`。
+  - Dense retrieval 可以做，但只能作为 supplement ablation，不替换当前 sparse RRF，也不应阻塞主线。
+  - Field-aware BM25、claim decomposition、evidence expansion、relation/comparison parsing 需要先做数据审计或降级实现。
+
+### Round09：Alpha-blend and REFUTES calibration
+- Index：`agent_docs/rounds/round_09/round_09_index.md`
+- Requirement：`agent_docs/rounds/round_09/requirements.md`
+- 报告：
+  - `agent_docs/rounds/round_09/round_09_report_a_execution_and_acceptance.md`
+- 当前状态：`本轮验收完成`
+- 当前判断：
+  - 最佳 final evidence selector 是 `MiniLM top100 scope + REFUTES x2 Fusion GBDT + alpha blend alpha_minilm=0.4`。
+  - top3 evidence F-score 达到 `0.2105`，高于 Round07 MiniLM-only `0.1987` 和 Round08 pure Fusion GBDT `0.2011`。
+  - best blend 的 REFUTES recall `0.1420`，仍低于 MiniLM-only `0.1790`。
+  - classifier macro-F1 仍然是 Round08 Fusion GBDT top50 更好：`0.4376`；Round09 blend top50 macro-F1 是 `0.4142`。
+  - assignment harmonic mean 当前 Round09 blend 更好：`0.2865`。
+
+### Round10：Neural verification baselines planning
+- Index：`agent_docs/rounds/round10/round10_index.md`
+- Requirement：`agent_docs/rounds/round10/requirements.md`
+- 报告：
+  - `agent_docs/rounds/round10/round10_report_a_stage_plan_and_acceptance.md`
+  - `agent_docs/rounds/round10/round10_report_b_execution_results.md`
+- 当前状态：`本轮最低验收完成`
+- 当前判断：
+  - 必须补 neural baseline，否则项目会太像 retrieval engineering。
+  - Round10 不应跑大量模型网格，应集中在 transformer claim classifier、claim-evidence verifier、pairwise neural reranker、hybrid scoring。
+  - DistilRoBERTa concat classifier over Fusion GBDT top10 达到 accuracy `0.5260`、macro-F1 `0.4543`，超过 TF-IDF baseline `0.4675` / `0.4376`。
+  - 完整 final-system 组合已补齐：Round09 blend evidence top3 + DistilRoBERTa classifier label 达到 evidence F `0.2105`、accuracy `0.5260`、harmonic mean `0.3007`。
+  - Neural verifier epoch4 pair-level macro-F1 `0.5027`，但 verifier top3 evidence F-score 只有 `0.1029`。
+  - Verifier top50 REFUTES recall `0.5309`，说明它有 REFUTES/context signal，但不适合直接控制 final top3。
+
 ## 当前全局判断
-- 当前最关键的问题：zero-shot reranker 学到的是 topic relevance，最终任务需要 fact-checking evidence relevance；Round06 要让 negatives 和 classifier input 更贴近 label decision。
+- 当前最关键的问题：final evidence 与 claim label 最优组件不同；final evidence 用 Round09 blend，claim label 用 DistilRoBERTa concat classifier；当前组合 dev harmonic mean `0.3007`。
 - 当前最可信的事实来源：README、Gmail 线程 `Re: NLP Group assignment`、Instagram 页面状态、Round01/Round02 报告。
-- 下一步建议：先固定 zero-shot MiniLM reranker 作为强 baseline；用它挖 high-ranked non-gold negatives，再训练 task-aware reranker，并同步准备 classifier baseline。
+- 下一步建议：形成最终系统组合：Round09 blend alpha0.4 负责 evidence top3，DistilRoBERTa concat classifier 负责 claim label；verifier 暂作为 REFUTES/context diagnostic。

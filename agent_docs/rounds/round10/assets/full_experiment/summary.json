@@ -1,0 +1,49 @@
+{
+  "best_by_assignment_harmonic": {
+    "system": "DistilRoBERTa blend top10",
+    "family": "Neural classifier",
+    "evidence_f": 0.21054421768707482,
+    "claim_accuracy": 0.525974025974026,
+    "harmonic_mean": 0.3007143157023504,
+    "claim_macro_f1": 0.4045077109138164,
+    "macro_recall": 0.24458874458874458,
+    "micro_recall": 0.20162932790224034,
+    "hit_any": 0.461038961038961,
+    "all_gold": 0.11038961038961038,
+    "precision": 0.21428571428571427,
+    "supports_recall": 0.32916666666666666,
+    "refutes_recall": 0.1419753086419753,
+    "nei_recall": 0.13658536585365855,
+    "disputed_recall": 0.32499999999999996
+  },
+  "best_by_claim_macro_f1": {
+    "system": "DistilRoBERTa fusion top10",
+    "family": "Neural classifier",
+    "evidence_f": 0.20111317254174396,
+    "claim_accuracy": 0.525974025974026,
+    "harmonic_mean": 0.2909700659126533,
+    "claim_macro_f1": 0.454334250386882,
+    "macro_recall": 0.23214285714285715,
+    "micro_recall": 0.1934826883910387,
+    "hit_any": 0.45454545454545453,
+    "all_gold": 0.11038961038961038,
+    "precision": 0.20562770562770563,
+    "supports_recall": 0.3377450980392157,
+    "refutes_recall": 0.08641975308641975,
+    "nei_recall": 0.13170731707317074,
+    "disputed_recall": 0.28055555555555556
+  },
+  "final_decoupled_prediction_path": "outputs/round10/full_experiment/predictions/final_round09_evidence_distilroberta_fusion_labels.json",
+  "final_aligned_prediction_path": "outputs/round10/full_experiment/predictions/final_round09_evidence_distilroberta_blend_labels.json",
+  "figures": [
+    "outputs/round10/full_experiment/figures/candidate_recall_curve.png",
+    "outputs/round10/full_experiment/figures/classifier_and_final_progression.png",
+    "outputs/round10/full_experiment/figures/classifier_blend_learning_curve.png",
+    "outputs/round10/full_experiment/figures/classifier_fusion_learning_curve.png",
+    "outputs/round10/full_experiment/figures/error_layer_breakdown.png",
+    "outputs/round10/full_experiment/figures/evidence_progression.png",
+    "outputs/round10/full_experiment/figures/final_aligned_confusion_matrix.png",
+    "outputs/round10/full_experiment/figures/final_decoupled_confusion_matrix.png",
+    "outputs/round10/full_experiment/figures/verifier_learning_curve.png"
+  ]
+}
