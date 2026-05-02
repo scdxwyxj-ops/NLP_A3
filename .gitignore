@@ -9,6 +9,19 @@ data/*.json
 outputs/
 models/
 
+# Local agent/AI working notes. These are private project memory, not submission artifacts.
+.agent/
+agent_docs/
+Agent_docs/
+
+# Chinese/local writeups should stay local unless explicitly converted for submission.
+docs/zh/
+docs/cn/
+docs/*_zh.md
+docs/*_cn.md
+docs/*chinese*.md
+docs/*Chinese*.md
+
 # Notebook checkpoints and OS files.
 .ipynb_checkpoints/
 .DS_Store
