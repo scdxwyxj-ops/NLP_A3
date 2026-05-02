@@ -1,2 +1,2 @@
 from .model import ClaimClassifier
-from .pipeline import classify_claim
+from .pipeline import Pipeline
