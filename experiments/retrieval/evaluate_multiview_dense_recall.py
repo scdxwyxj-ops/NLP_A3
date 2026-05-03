@@ -147,6 +147,8 @@ def main():
         evidence_embeddings=evidence_embeddings,
         top_k=args.view_top_k,
         chunk_size=args.search_chunk_size,
+        device=device,
+        query_batch_size=args.query_batch_size,
     )
     build_seconds = time.perf_counter() - start
 

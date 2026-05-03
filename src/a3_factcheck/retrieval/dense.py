@@ -145,7 +145,24 @@ def build_embedding_cache(
     return evidence_ids, np.memmap(embeddings_path, dtype=dtype, mode="r", shape=(len(evidence_ids), dim))
 
 
-def search_dense_topk(query_embeddings, evidence_embeddings, top_k, chunk_size=100_000):
+def search_dense_topk(
+    query_embeddings,
+    evidence_embeddings,
+    top_k,
+    chunk_size=100_000,
+    device=None,
+    query_batch_size=32,
+):
+    if device is not None and torch.device(device).type == "cuda":
+        return search_dense_topk_torch(
+            query_embeddings=query_embeddings,
+            evidence_embeddings=evidence_embeddings,
+            top_k=top_k,
+            chunk_size=chunk_size,
+            device=torch.device(device),
+            query_batch_size=query_batch_size,
+        )
+
     results = []
     for query in query_embeddings:
         best_scores = np.empty((0,), dtype=np.float32)
@@ -169,4 +186,64 @@ def search_dense_topk(query_embeddings, evidence_embeddings, top_k, chunk_size=1
             best_scores = best_scores[keep]
             best_indices = best_indices[keep]
         results.append((best_indices.tolist(), best_scores.tolist()))
+    return results
+
+
+def search_dense_topk_torch(
+    query_embeddings,
+    evidence_embeddings,
+    top_k,
+    chunk_size,
+    device,
+    query_batch_size,
+):
+    """Chunked GPU top-k search without materializing the full score matrix."""
+    results = []
+    n_queries = query_embeddings.shape[0]
+    n_evidence = evidence_embeddings.shape[0]
+    query_batch_size = max(1, int(query_batch_size))
+
+    with torch.no_grad():
+        for query_start in range(0, n_queries, query_batch_size):
+            query_np = query_embeddings[
+                query_start : query_start + query_batch_size
+            ].astype(np.float32, copy=False)
+            queries = torch.from_numpy(query_np).to(device=device, dtype=torch.float32)
+            best_scores = None
+            best_indices = None
+
+            for evidence_start in range(0, n_evidence, chunk_size):
+                evidence_np = np.asarray(
+                    evidence_embeddings[
+                        evidence_start : evidence_start + chunk_size
+                    ]
+                ).astype(np.float32, copy=False)
+                evidence = torch.from_numpy(evidence_np).to(
+                    device=device, dtype=torch.float32
+                )
+                scores = queries @ evidence.T
+                local_k = min(top_k, scores.shape[1])
+                candidate_scores, candidate_indices = torch.topk(
+                    scores, k=local_k, dim=1
+                )
+                candidate_indices = candidate_indices + evidence_start
+
+                if best_scores is None:
+                    best_scores = candidate_scores
+                    best_indices = candidate_indices
+                else:
+                    merged_scores = torch.cat([best_scores, candidate_scores], dim=1)
+                    merged_indices = torch.cat([best_indices, candidate_indices], dim=1)
+                    keep_k = min(top_k, merged_scores.shape[1])
+                    best_scores, keep = torch.topk(merged_scores, k=keep_k, dim=1)
+                    best_indices = torch.gather(merged_indices, 1, keep)
+
+                del evidence, scores, candidate_scores, candidate_indices
+
+            batch_scores = best_scores.cpu().numpy()
+            batch_indices = best_indices.cpu().numpy()
+            for indices, scores in zip(batch_indices, batch_scores):
+                results.append((indices.tolist(), scores.tolist()))
+            del queries, best_scores, best_indices
+
     return results
