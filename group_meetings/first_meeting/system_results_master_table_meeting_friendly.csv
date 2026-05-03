@@ -1,0 +1,32 @@
+Method / Experiment,Candidate Pool / Label Context,Evidence Output k,Evidence F,Macro Recall,Hit-any,All-gold,REFUTES Recall,Accuracy,Macro-F1,Official H,Interpretation
+BM25 sparse baseline,BM25,5,0.0772,0.1156,0.2792,0.0325,0.0123,0.4416,n/a,0.1314,weak baseline
+MiniLM zero-shot,BM25 top50,3,0.1642,0.1877,0.3961,0.0714,0.0494,0.4416,n/a,0.2394,first strong neural rerank
+MiniLM zero-shot,BM25 top50,5,0.1578,0.2332,0.4545,0.0909,0.0679,0.4416,n/a,0.2325,"higher recall, lower precision"
+MiniLM zero-shot,BM25 top50,20,0.0777,0.3035,0.5519,0.1234,0.1327,0.4416,n/a,0.1321,"context only, not final output"
+MiniLM BCE fine-tuned,BM25 top50,5,0.1044,0.1552,0.3377,0.0584,0.0494,0.4416,n/a,0.1688,rejected; below zero-shot
+Task-aware MiniLM,BM25 top50 + mined negatives,3,0.1599,0.1790,0.3766,0.0649,0.0494,0.4416,n/a,0.2348,"close, but below zero-shot"
+Task-aware MiniLM,BM25 top50 + mined negatives,5,0.1526,0.2256,0.4351,0.0844,0.0864,0.4416,n/a,0.2268,not final
+BM25 candidate pool,BM25 top50,pool,n/a,0.3249,0.5844,0.1364,0.1327,n/a,n/a,n/a,candidate reference
+BM25 candidate pool,BM25 top100,pool,n/a,0.4188,0.6753,0.2013,0.2716,n/a,n/a,n/a,candidate reference
+BM25 candidate pool,BM25 top200,pool,n/a,0.4878,0.7727,0.2403,0.3858,n/a,n/a,n/a,candidate reference
+BM25 candidate pool,BM25 top500,pool,n/a,0.5861,0.8377,0.3247,0.5123,n/a,n/a,n/a,BM25 ceiling
+Char TF-IDF candidate pool,Char TF-IDF top500,pool,n/a,0.6610,0.8896,0.4026,0.5556,n/a,n/a,n/a,best macro candidate recall
+RRF candidate pool,BM25 top500 + Char TF-IDF top500,pool,n/a,0.6579,0.8896,0.4091,0.5926,n/a,n/a,n/a,selected candidate pool
+RRF + MiniLM,RRF top500 -> MiniLM,3,0.1987,0.2331,0.4545,0.1039,0.1790,0.4416,n/a,0.2741,strong evidence baseline
+Fusion LogReg,MiniLM top50 + features,3,0.1957,0.2188,n/a,n/a,0.0802,0.4416,n/a,0.2712,below MiniLM
+Fusion GBDT,MiniLM top50 + features,3,0.2011,0.2321,0.4545,0.1104,0.0864,0.4416,n/a,0.2764,"overall up, REFUTES down"
+Fusion GBDT,MiniLM top50 + features,20,0.1153,0.4669,0.7403,n/a,0.4136,0.4416,n/a,0.1829,"useful context, not final output"
+TF-IDF classifier,Fusion GBDT top50 context,3 + ctx50,0.2011,0.2321,0.4545,0.1104,0.0864,0.4675,0.4376,0.2812,strong sparse classifier
+Alpha blend selector,"GBDT + MiniLM, alpha=0.7",3,0.2104,n/a,n/a,n/a,n/a,0.4416,n/a,0.2850,useful blend check
+REFUTES-weighted feature model,MiniLM top100 + features,3,0.2037,n/a,n/a,n/a,n/a,0.4416,n/a,0.2788,pure fusion not best
+Alpha blend selector,"REFUTES x2 GBDT + MiniLM, alpha=0.4",3,0.2105,0.2446,0.4610,0.1104,0.1420,0.4416,n/a,0.2851,best evidence selector
+Alpha blend selector,"REFUTES x2 GBDT + MiniLM, alpha=0.8",3,0.2074,0.2444,n/a,n/a,0.1605,0.4416,n/a,0.2822,"higher REFUTES, lower F"
+Alpha-blended TF-IDF classifier,Alpha-blended evidence top50 context,3 + ctx50,0.2105,0.2446,0.4610,0.1104,0.1420,0.4481,0.4142,0.2865,"better evidence, weaker label"
+DistilRoBERTa label classifier,Fusion GBDT top10 context,3 + ctx10,0.2011,0.2321,0.4545,0.1104,0.0864,0.5260,0.4543,0.2910,best label macro-F1
+DistilRoBERTa label classifier,Alpha-blended evidence top10 context,3 + ctx10,0.2105,0.2446,0.4610,0.1104,0.1420,0.5260,0.4045,0.3007,best official H as single context
+Neural verifier,Verifier score over top50,3,0.1029,0.1048,0.2792,0.0195,0.0340,0.4545,n/a,0.1678,not final reranker
+Neural verifier,Verifier score over top50,20,0.1028,0.4105,n/a,n/a,0.4074,0.4481,n/a,0.1672,useful wide REFUTES context
+Neural verifier,Verifier score over top50,50,0.0611,0.5475,n/a,n/a,0.5309,0.4481,n/a,0.1076,diagnostic only
+Hybrid verifier,"Alpha-blended evidence + verifier, gamma=0.2",3,0.2038,0.2352,0.4481,0.1039,0.1235,0.4416,n/a,0.2789,below Alpha-blended evidence
+Hybrid verifier,"Alpha-blended evidence + verifier, gamma=0.6",20,0.1206,0.4926,n/a,n/a,0.4568,0.4416,n/a,0.1895,high context recall only
+Final recommended pipeline,Alpha-blended evidence + feature-context DistilRoBERTa,3 + ctx10,0.2105,0.2446,0.4610,0.1104,0.1420,0.5260,0.4543,0.3007,recommended final system

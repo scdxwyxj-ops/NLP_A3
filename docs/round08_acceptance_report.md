@@ -31,16 +31,24 @@ Harmonic mean = 0.2812
 
 ### Error Layer Analysis
 
-| Layer | Count | Claim % | Gold Evidence % | Main Fix |
-|---|---:|---:|---:|---|
-| gold not in top500 | 180 | 0.5909 | 0.3666 | dense supplement / candidate retrieval |
-| gold in top500 but not top50 | 58 | 0.3052 | 0.1181 | score more candidates / fusion reranker |
-| gold in top50 but not top20 | 52 | 0.2468 | 0.1059 | feature fusion reranker |
-| gold in top20 but not top3 | 108 | 0.4610 | 0.2200 | final evidence selection |
-| coverage top500 | 311 | 0.8896 | 0.6334 | diagnostic |
-| coverage top50 | 253 | 0.8052 | 0.5153 | diagnostic |
-| coverage top20 | 201 | 0.7143 | 0.4094 | diagnostic |
-| coverage top3 | 93 | 0.4545 | 0.1894 | diagnostic |
+The diagnostic should be read as two separate tables. The first table reports
+cumulative coverage at each cutoff.
+
+| Cutoff | Covered Gold Evidence | Gold Evidence Coverage | Claim Hit-any |
+|---|---:|---:|---:|
+| top500 | 311 / 491 | 0.6334 | 0.8896 |
+| top50 | 253 / 491 | 0.5153 | 0.8052 |
+| top20 | 201 / 491 | 0.4094 | 0.7143 |
+| top3 | 93 / 491 | 0.1894 | 0.4545 |
+
+The second table reports the loss between adjacent cutoffs.
+
+| Loss Layer | Lost Gold Evidence | Lost Gold Evidence % | Affected Claims | Affected Claim % | Main Fix |
+|---|---:|---:|---:|---:|---|
+| not in top500 | 180 | 0.3666 | 91 | 0.5909 | dense supplement / candidate retrieval |
+| top500 -> top50 | 58 | 0.1181 | 47 | 0.3052 | score more candidates / fusion reranker |
+| top50 -> top20 | 52 | 0.1059 | 38 | 0.2468 | feature fusion reranker |
+| top20 -> top3 | 108 | 0.2200 | 71 | 0.4610 | final evidence selection |
 
 ### Fusion Reranker
 
@@ -66,4 +74,3 @@ Use Fusion GBDT top50 as the next classifier-context candidate.
 Do not claim that this solves REFUTES: top3 REFUTES recall dropped in this first fusion version.
 
 Next work should score a wider MiniLM candidate scope, such as top100/top200, then rerun fusion.
-
