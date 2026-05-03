@@ -78,6 +78,7 @@ def build_embedding_cache(
     batch_size=128,
     max_length=128,
     pooling="cls",
+    text_prefix="",
     dtype=np.float32,
 ):
     cache_dir = Path(cache_dir)
@@ -93,6 +94,7 @@ def build_embedding_cache(
             meta.get("model_name") == model_name
             and meta.get("pooling") == pooling
             and meta.get("max_length") == max_length
+            and meta.get("text_prefix", "") == text_prefix
             and meta.get("count") == len(evidence_ids)
         ):
             shape = (meta["count"], meta["dim"])
@@ -108,7 +110,9 @@ def build_embedding_cache(
 
     for start in range(0, len(evidence_ids), batch_size):
         batch_ids = evidence_ids[start : start + batch_size]
-        batch_texts = [evidence[evidence_id] for evidence_id in batch_ids]
+        batch_texts = [
+            f"{text_prefix}{evidence[evidence_id]}" for evidence_id in batch_ids
+        ]
         batch_embeddings = encode_texts(
             texts=batch_texts,
             tokenizer=tokenizer,
@@ -130,6 +134,7 @@ def build_embedding_cache(
             "model_name": model_name,
             "pooling": pooling,
             "max_length": max_length,
+            "text_prefix": text_prefix,
             "count": len(evidence_ids),
             "dim": dim,
             "dtype": str(np.dtype(dtype)),
