@@ -1,6 +1,7 @@
 import argparse
 import csv
 import gc
+import hashlib
 import heapq
 import json
 import math
@@ -262,6 +263,17 @@ def split_pool(pool, claims):
     return {claim_id: pool.get(claim_id, []) for claim_id in claims}
 
 
+def pool_to_id_pool(pool, top_k):
+    return {
+        claim_id: [candidate.evidence_id for candidate in candidates[:top_k]]
+        for claim_id, candidates in pool.items()
+    }
+
+
+def item_evidence_id(item):
+    return item if isinstance(item, str) else item.evidence_id
+
+
 def build_dense_pool(
     claims,
     evidence,
@@ -330,6 +342,265 @@ def build_dense_pool(
     write_pool(pool, output_dir / "candidates" / f"{method_name}.json")
     log_stage(f"finished dense pool {method_name}")
     return pool, {"cache_seconds": cache_seconds, "search_seconds": search_seconds}
+
+
+def evidence_id_fingerprint(evidence_ids):
+    digest = hashlib.sha256()
+    for evidence_id in evidence_ids:
+        digest.update(evidence_id.encode("utf-8"))
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def prefilter_evidence_ids(claims, evidence, prefilter_pool, prefilter_top_k):
+    wanted = set()
+    for claim_id in claims:
+        for item in prefilter_pool.get(claim_id, [])[:prefilter_top_k]:
+            evidence_id = item_evidence_id(item)
+            if evidence_id in evidence:
+                wanted.add(evidence_id)
+    return [evidence_id for evidence_id in evidence if evidence_id in wanted]
+
+
+def build_restricted_embedding_cache(
+    evidence,
+    evidence_ids,
+    model_name,
+    cache_dir,
+    tokenizer,
+    model,
+    device,
+    batch_size,
+    max_length,
+    pooling,
+    cache_dtype,
+):
+    dtype = np.dtype(cache_dtype)
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    ids_path = cache_dir / "evidence_ids.json"
+    embeddings_path = cache_dir / "evidence_embeddings.dat"
+    meta_path = cache_dir / "metadata.json"
+    fingerprint = evidence_id_fingerprint(evidence_ids)
+
+    if ids_path.exists() and embeddings_path.exists() and meta_path.exists():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        if (
+            meta.get("model_name") == model_name
+            and meta.get("pooling") == pooling
+            and meta.get("max_length") == max_length
+            and meta.get("dtype") == str(dtype)
+            and meta.get("count") == len(evidence_ids)
+            and meta.get("fingerprint") == fingerprint
+        ):
+            shape = (meta["count"], meta["dim"])
+            return json.loads(ids_path.read_text(encoding="utf-8")), np.memmap(
+                embeddings_path, dtype=dtype, mode="r", shape=shape
+            )
+
+    dim = int(model.config.hidden_size)
+    embeddings = np.memmap(
+        embeddings_path, dtype=dtype, mode="w+", shape=(len(evidence_ids), dim)
+    )
+    for start in range(0, len(evidence_ids), batch_size):
+        batch_ids = evidence_ids[start : start + batch_size]
+        batch_texts = [evidence[evidence_id] for evidence_id in batch_ids]
+        batch_embeddings = encode_texts(
+            texts=batch_texts,
+            tokenizer=tokenizer,
+            model=model,
+            device=device,
+            batch_size=batch_size,
+            max_length=max_length,
+            pooling=pooling,
+        )
+        embeddings[start : start + len(batch_ids)] = batch_embeddings.astype(dtype)
+        if start == 0 or (start // batch_size) % 100 == 0:
+            log_stage(
+                f"encoded restricted evidence "
+                f"{start + len(batch_ids)}/{len(evidence_ids)}"
+            )
+
+    embeddings.flush()
+    write_json(ids_path, evidence_ids)
+    write_json(
+        meta_path,
+        {
+            "model_name": model_name,
+            "pooling": pooling,
+            "max_length": max_length,
+            "count": len(evidence_ids),
+            "dim": dim,
+            "dtype": str(dtype),
+            "fingerprint": fingerprint,
+        },
+    )
+    return evidence_ids, np.memmap(
+        embeddings_path, dtype=dtype, mode="r", shape=(len(evidence_ids), dim)
+    )
+
+
+def restricted_dense_search(
+    claims,
+    prefilter_pool,
+    evidence_ids,
+    evidence_embeddings,
+    query_embeddings,
+    top_k,
+    prefilter_top_k,
+):
+    evidence_index = {evidence_id: idx for idx, evidence_id in enumerate(evidence_ids)}
+    pool = {}
+    for claim_idx, claim_id in enumerate(claims.keys()):
+        candidate_ids = []
+        seen = set()
+        for item in prefilter_pool.get(claim_id, [])[:prefilter_top_k]:
+            evidence_id = item_evidence_id(item)
+            if evidence_id in evidence_index and evidence_id not in seen:
+                candidate_ids.append(evidence_id)
+                seen.add(evidence_id)
+        if not candidate_ids:
+            pool[claim_id] = []
+            continue
+
+        positions = np.asarray(
+            [evidence_index[evidence_id] for evidence_id in candidate_ids],
+            dtype=np.int64,
+        )
+        candidate_embeddings = np.asarray(evidence_embeddings[positions], dtype=np.float32)
+        scores = candidate_embeddings @ query_embeddings[claim_idx]
+        local_k = min(top_k, len(candidate_ids))
+        if local_k == len(candidate_ids):
+            selected = np.argsort(scores)[::-1]
+        else:
+            selected = np.argpartition(scores, -local_k)[-local_k:]
+            selected = selected[np.argsort(scores[selected])[::-1]]
+        pool[claim_id] = [
+            Candidate(
+                claim_id=claim_id,
+                evidence_id=candidate_ids[int(index)],
+                rank=rank,
+                score=float(scores[int(index)]),
+            )
+            for rank, index in enumerate(selected, start=1)
+        ]
+        if claim_idx and claim_idx % 100 == 0:
+            log_stage(f"restricted dense searched {claim_idx}/{len(claims)} claims")
+    return pool
+
+
+def build_restricted_dense_pools(
+    claims,
+    evidence,
+    prefilter_pool,
+    model_name,
+    cache_dir,
+    device,
+    pool_top_k,
+    prefilter_top_k,
+    batch_size,
+    query_batch_size,
+    max_length,
+    query_max_length,
+    pooling,
+    cache_dtype,
+):
+    log_stage(
+        "building restricted dense pools "
+        f"(prefilter_top_k={prefilter_top_k})"
+    )
+    evidence_ids = prefilter_evidence_ids(
+        claims=claims,
+        evidence=evidence,
+        prefilter_pool=prefilter_pool,
+        prefilter_top_k=prefilter_top_k,
+    )
+    log_stage(
+        f"restricted dense evidence union {len(evidence_ids)}/{len(evidence)}"
+    )
+
+    tokenizer, model = load_encoder(model_name, device)
+    start = time.perf_counter()
+    evidence_ids, evidence_embeddings = build_restricted_embedding_cache(
+        evidence=evidence,
+        evidence_ids=evidence_ids,
+        model_name=model_name,
+        cache_dir=cache_dir,
+        tokenizer=tokenizer,
+        model=model,
+        device=device,
+        batch_size=batch_size,
+        max_length=max_length,
+        pooling=pooling,
+        cache_dtype=cache_dtype,
+    )
+    cache_seconds = time.perf_counter() - start
+
+    timings = {}
+    pools = {}
+    for key, query_prefix in {
+        "plain": "",
+        "qprefix": "Represent this sentence for searching relevant passages: ",
+    }.items():
+        start = time.perf_counter()
+        claim_texts = [
+            f"{query_prefix}{claim['claim_text']}" for claim in claims.values()
+        ]
+        query_embeddings = encode_texts(
+            texts=claim_texts,
+            tokenizer=tokenizer,
+            model=model,
+            device=device,
+            batch_size=query_batch_size,
+            max_length=query_max_length,
+            pooling=pooling,
+        )
+        query_seconds = time.perf_counter() - start
+
+        start = time.perf_counter()
+        pools[key] = restricted_dense_search(
+            claims=claims,
+            prefilter_pool=prefilter_pool,
+            evidence_ids=evidence_ids,
+            evidence_embeddings=evidence_embeddings,
+            query_embeddings=query_embeddings,
+            top_k=pool_top_k,
+            prefilter_top_k=prefilter_top_k,
+        )
+        search_seconds = time.perf_counter() - start
+        timings[key] = {
+            "cache_seconds": cache_seconds if key == "plain" else 0.0,
+            "query_seconds": query_seconds,
+            "search_seconds": search_seconds,
+            "encoded_evidence": len(evidence_ids),
+            "prefilter_top_k": prefilter_top_k,
+        }
+        del query_embeddings
+        gc.collect()
+
+    log_stage("finished restricted dense pools")
+    return pools["plain"], pools["qprefix"], timings["plain"], timings["qprefix"]
+
+
+def build_bm25_prefilter_pool(claims, evidence, top_k, k1, b, claim_batch_size):
+    if claim_batch_size <= 0 or claim_batch_size >= len(claims):
+        pool = query_bm25_pool(claims, evidence, top_k, k1=k1, b=b)
+        return pool_to_id_pool(pool, top_k)
+
+    pool = {}
+    claim_items = list(claims.items())
+    for start in range(0, len(claim_items), claim_batch_size):
+        batch_claims = dict(claim_items[start : start + claim_batch_size])
+        log_stage(
+            "building BM25 dense prefilter batch "
+            f"{start // claim_batch_size + 1}/"
+            f"{math.ceil(len(claim_items) / claim_batch_size)}"
+        )
+        batch_pool = query_bm25_pool(batch_claims, evidence, top_k, k1=k1, b=b)
+        pool.update(pool_to_id_pool(batch_pool, top_k))
+        del batch_pool
+        gc.collect()
+    return pool
 
 
 def build_sparse_pools(train_claims, target_claims, evidence, pool_top_k, args):
@@ -464,6 +735,28 @@ def main():
     parser.add_argument("--cache-dtype", choices=["float16", "float32"], default="float16")
     parser.add_argument("--max-negatives-per-claim", type=int, default=0)
     parser.add_argument(
+        "--dense-mode",
+        choices=["full", "sparse-prefilter"],
+        default="full",
+        help=(
+            "full encodes/searches every evidence item; sparse-prefilter first "
+            "uses a sparse pool to restrict each claim to a reproducible lexical "
+            "candidate set before BGE scoring."
+        ),
+    )
+    parser.add_argument("--sparse-prefilter-top-k", type=int, default=12_000)
+    parser.add_argument(
+        "--train-sparse-prefilter-top-k",
+        type=int,
+        default=0,
+        help=(
+            "Optional shallower BM25 prefilter for training claims. "
+            "Use 0 to match --sparse-prefilter-top-k."
+        ),
+    )
+    parser.add_argument("--prefilter-claim-batch-size", type=int, default=256)
+    parser.add_argument("--write-prefilter-pool", action="store_true")
+    parser.add_argument(
         "--sparse-mode",
         choices=["exact", "query"],
         default="exact",
@@ -506,6 +799,7 @@ def main():
                 "output_k": output_k,
                 "device": str(device),
                 "cache_dtype": args.cache_dtype,
+                "dense_mode": args.dense_mode,
             },
             indent=2,
         )
@@ -519,79 +813,152 @@ def main():
     write_pool(train_char, candidate_dir / "train_char.json")
     write_pool(target_char, candidate_dir / "target_char.json")
 
-    cache_dir = output_dir / "dense_bge_base_cache"
-    train_dense, train_dense_timing = build_dense_pool(
-        train_claims,
-        evidence,
-        args.model,
-        cache_dir,
-        output_dir,
-        "train_bge_base_plain",
-        "",
-        device,
-        pool_top_k,
-        args.batch_size,
-        args.query_batch_size,
-        args.max_length,
-        args.query_max_length,
-        args.pooling,
-        args.search_chunk_size,
-        args.cache_dtype,
-    )
-    target_dense, target_dense_timing = build_dense_pool(
-        target_claims,
-        evidence,
-        args.model,
-        cache_dir,
-        output_dir,
-        "target_bge_base_plain",
-        "",
-        device,
-        pool_top_k,
-        args.batch_size,
-        args.query_batch_size,
-        args.max_length,
-        args.query_max_length,
-        args.pooling,
-        args.search_chunk_size,
-        args.cache_dtype,
-    )
-    train_denseq, train_denseq_timing = build_dense_pool(
-        train_claims,
-        evidence,
-        args.model,
-        cache_dir,
-        output_dir,
-        "train_bge_base_qprefix",
-        "Represent this sentence for searching relevant passages: ",
-        device,
-        pool_top_k,
-        args.batch_size,
-        args.query_batch_size,
-        args.max_length,
-        args.query_max_length,
-        args.pooling,
-        args.search_chunk_size,
-        args.cache_dtype,
-    )
-    target_denseq, target_denseq_timing = build_dense_pool(
-        target_claims,
-        evidence,
-        args.model,
-        cache_dir,
-        output_dir,
-        "target_bge_base_qprefix",
-        "Represent this sentence for searching relevant passages: ",
-        device,
-        pool_top_k,
-        args.batch_size,
-        args.query_batch_size,
-        args.max_length,
-        args.query_max_length,
-        args.pooling,
-        args.search_chunk_size,
-        args.cache_dtype,
-    )
+    if args.dense_mode == "sparse-prefilter":
+        target_prefilter_top_k = min(args.sparse_prefilter_top_k, len(evidence))
+        train_prefilter_top_k = min(
+            args.train_sparse_prefilter_top_k or args.sparse_prefilter_top_k,
+            len(evidence),
+        )
+        prefilter_top_k = max(train_prefilter_top_k, target_prefilter_top_k)
+        all_claims = combined_claims(train_claims, target_claims)
+        log_stage(
+            "building BM25 dense prefilters "
+            f"(train_top_k={train_prefilter_top_k}, "
+            f"target_top_k={target_prefilter_top_k})"
+        )
+        train_prefilter_pool = build_bm25_prefilter_pool(
+            train_claims,
+            evidence,
+            top_k=train_prefilter_top_k,
+            k1=1.5,
+            b=0.75,
+            claim_batch_size=args.prefilter_claim_batch_size,
+        )
+        target_prefilter_pool = build_bm25_prefilter_pool(
+            target_claims,
+            evidence,
+            top_k=target_prefilter_top_k,
+            k1=1.5,
+            b=0.75,
+            claim_batch_size=args.prefilter_claim_batch_size,
+        )
+        prefilter_pool = {**train_prefilter_pool, **target_prefilter_pool}
+        del train_prefilter_pool, target_prefilter_pool
+        gc.collect()
+        if args.write_prefilter_pool:
+            prefilter_path = (
+                candidate_dir
+                / (
+                    "bm25_prefilter_"
+                    f"train{train_prefilter_top_k}_target{target_prefilter_top_k}.json"
+                )
+            )
+            write_json(prefilter_path, prefilter_pool)
+        dense_all, denseq_all, dense_timing, denseq_timing = build_restricted_dense_pools(
+            claims=all_claims,
+            evidence=evidence,
+            prefilter_pool=prefilter_pool,
+            model_name=args.model,
+            cache_dir=output_dir / "dense_bge_base_restricted_cache",
+            device=device,
+            pool_top_k=pool_top_k,
+            prefilter_top_k=prefilter_top_k,
+            batch_size=args.batch_size,
+            query_batch_size=args.query_batch_size,
+            max_length=args.max_length,
+            query_max_length=args.query_max_length,
+            pooling=args.pooling,
+            cache_dtype=args.cache_dtype,
+        )
+        train_dense = split_pool(dense_all, train_claims)
+        target_dense = split_pool(dense_all, target_claims)
+        train_denseq = split_pool(denseq_all, train_claims)
+        target_denseq = split_pool(denseq_all, target_claims)
+        del dense_all, denseq_all
+        train_dense_timing = dict(dense_timing)
+        target_dense_timing = dict(dense_timing)
+        train_denseq_timing = dict(denseq_timing)
+        target_denseq_timing = dict(denseq_timing)
+        write_pool(train_dense, candidate_dir / "train_bge_base_plain.json")
+        write_pool(target_dense, candidate_dir / "target_bge_base_plain.json")
+        write_pool(train_denseq, candidate_dir / "train_bge_base_qprefix.json")
+        write_pool(target_denseq, candidate_dir / "target_bge_base_qprefix.json")
+        del prefilter_pool
+        gc.collect()
+    else:
+        cache_dir = output_dir / "dense_bge_base_cache"
+        train_dense, train_dense_timing = build_dense_pool(
+            train_claims,
+            evidence,
+            args.model,
+            cache_dir,
+            output_dir,
+            "train_bge_base_plain",
+            "",
+            device,
+            pool_top_k,
+            args.batch_size,
+            args.query_batch_size,
+            args.max_length,
+            args.query_max_length,
+            args.pooling,
+            args.search_chunk_size,
+            args.cache_dtype,
+        )
+        target_dense, target_dense_timing = build_dense_pool(
+            target_claims,
+            evidence,
+            args.model,
+            cache_dir,
+            output_dir,
+            "target_bge_base_plain",
+            "",
+            device,
+            pool_top_k,
+            args.batch_size,
+            args.query_batch_size,
+            args.max_length,
+            args.query_max_length,
+            args.pooling,
+            args.search_chunk_size,
+            args.cache_dtype,
+        )
+        train_denseq, train_denseq_timing = build_dense_pool(
+            train_claims,
+            evidence,
+            args.model,
+            cache_dir,
+            output_dir,
+            "train_bge_base_qprefix",
+            "Represent this sentence for searching relevant passages: ",
+            device,
+            pool_top_k,
+            args.batch_size,
+            args.query_batch_size,
+            args.max_length,
+            args.query_max_length,
+            args.pooling,
+            args.search_chunk_size,
+            args.cache_dtype,
+        )
+        target_denseq, target_denseq_timing = build_dense_pool(
+            target_claims,
+            evidence,
+            args.model,
+            cache_dir,
+            output_dir,
+            "target_bge_base_qprefix",
+            "Represent this sentence for searching relevant passages: ",
+            device,
+            pool_top_k,
+            args.batch_size,
+            args.query_batch_size,
+            args.max_length,
+            args.query_max_length,
+            args.pooling,
+            args.search_chunk_size,
+            args.cache_dtype,
+        )
 
     train_rrf = merge_rrf(
         "train_rrf_bm25_char_base_baseq_k500",
