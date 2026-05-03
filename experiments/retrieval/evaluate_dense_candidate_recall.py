@@ -70,6 +70,7 @@ def main():
     parser.add_argument("--query-max-length", type=int, default=128)
     parser.add_argument("--query-prefix", default="")
     parser.add_argument("--evidence-prefix", default="")
+    parser.add_argument("--cache-dtype", choices=["float16", "float32"], default="float32")
     parser.add_argument("--search-chunk-size", type=int, default=100_000)
     args = parser.parse_args()
 
@@ -95,6 +96,7 @@ def main():
         max_length=args.max_length,
         pooling=args.pooling,
         text_prefix=args.evidence_prefix,
+        dtype=np.dtype(args.cache_dtype),
     )
     cache_seconds = time.perf_counter() - start
 

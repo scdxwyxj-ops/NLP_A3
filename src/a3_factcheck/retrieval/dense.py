@@ -81,6 +81,7 @@ def build_embedding_cache(
     text_prefix="",
     dtype=np.float32,
 ):
+    dtype = np.dtype(dtype)
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     ids_path = cache_dir / "evidence_ids.json"
@@ -95,6 +96,7 @@ def build_embedding_cache(
             and meta.get("pooling") == pooling
             and meta.get("max_length") == max_length
             and meta.get("text_prefix", "") == text_prefix
+            and meta.get("dtype") == str(dtype)
             and meta.get("count") == len(evidence_ids)
         ):
             shape = (meta["count"], meta["dim"])
