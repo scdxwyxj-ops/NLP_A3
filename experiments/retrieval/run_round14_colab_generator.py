@@ -23,6 +23,8 @@ from experiments.retrieval.evaluate_candidate_recall import (
     build_bm25_pool,
     build_char_tfidf_pool,
 )
+from experiments.retrieval.audit_sparse_prf import build_expanded_claims
+from experiments.retrieval.audit_sparse_query_views import merge_pseudo_pool, pseudo_claims
 from experiments.retrieval.run_round13_colab_generator import (
     build_dense_pool,
     build_restricted_embedding_cache,
@@ -209,6 +211,46 @@ def build_word_gate_pair(name, claims, evidence, top_k):
     pool = query_word_tfidf_pool(claims, evidence, top_k)
     gc.collect()
     return pool
+
+
+def build_query_view_gate_pair(name, claims, evidence, top_k, max_views, rrf_k):
+    log_stage(f"building {name} query-view BM25 gate top{top_k}")
+    pseudo, mapping = pseudo_claims(claims, max_views=max_views)
+    log_stage(f"{name} query views expanded {len(claims)} -> {len(pseudo)}")
+    pseudo_bm25 = query_bm25_pool(pseudo, evidence, top_k, k1=1.5, b=0.75)
+    pool = merge_pseudo_pool(claims, pseudo_bm25, mapping, top_k, rrf_k)
+    gc.collect()
+    return pool
+
+
+def build_prf_gate_pair(name, claims, evidence, base_pool, top_k, feedback_top_k, max_terms):
+    log_stage(
+        f"building {name} PRF BM25 gate top{top_k} "
+        f"(feedback_top_k={feedback_top_k}, max_terms={max_terms})"
+    )
+    vectorizer = CountVectorizer(
+        lowercase=True,
+        strip_accents="unicode",
+        stop_words="english",
+        ngram_range=(1, 2),
+        dtype=np.float32,
+    )
+    expanded_claims, _expansion_rows = build_expanded_claims(
+        claims=claims,
+        evidence=evidence,
+        base_pool=base_pool,
+        max_feedback=feedback_top_k,
+        max_terms=max_terms,
+        analyzer=vectorizer.build_analyzer(),
+    )
+    pool = query_bm25_pool(expanded_claims, evidence, top_k, k1=1.5, b=0.75)
+    gc.collect()
+    return pool
+
+
+def append_weighted_source(sources, pool, weight):
+    for _ in range(max(0, int(weight))):
+        sources.append(pool)
 
 
 def build_sparse_gated_dense_pools(
@@ -562,6 +604,24 @@ def main():
         action="store_true",
         help="Add a word TF-IDF sparse view to the BGE-small sparse gate.",
     )
+    parser.add_argument(
+        "--small-gate-query-views",
+        action="store_true",
+        help="Add bounded query-view BM25 sources to the BGE-small sparse gate.",
+    )
+    parser.add_argument(
+        "--small-gate-prf",
+        action="store_true",
+        help="Add RM3-style PRF expanded BM25 to the BGE-small sparse gate.",
+    )
+    parser.add_argument("--small-gate-rrf-k", type=int, default=500)
+    parser.add_argument("--small-gate-bm25-weight", type=int, default=1)
+    parser.add_argument("--small-gate-char-weight", type=int, default=1)
+    parser.add_argument("--small-gate-query-view-weight", type=int, default=1)
+    parser.add_argument("--small-gate-prf-weight", type=int, default=1)
+    parser.add_argument("--small-gate-max-views", type=int, default=6)
+    parser.add_argument("--small-gate-prf-feedback-top-k", type=int, default=20)
+    parser.add_argument("--small-gate-prf-max-terms", type=int, default=16)
     parser.add_argument("--max-negatives-per-claim", type=int, default=0)
     parser.add_argument("--no-nei-weights", action="store_true")
     parser.add_argument(
@@ -626,6 +686,15 @@ def main():
         "skip_base_subset": args.skip_base_subset,
         "source_pool_dir": args.source_pool_dir,
         "small_gate_word_tfidf": args.small_gate_word_tfidf,
+        "small_gate_query_views": args.small_gate_query_views,
+        "small_gate_prf": args.small_gate_prf,
+        "small_gate_rrf_k": args.small_gate_rrf_k,
+        "small_gate_weights": {
+            "bm25": args.small_gate_bm25_weight,
+            "char": args.small_gate_char_weight,
+            "query_view": args.small_gate_query_view_weight,
+            "prf": args.small_gate_prf_weight,
+        },
         "sparse_mode": args.sparse_mode,
         "colab_safe_review": {
             "stage1_uses_bge": False,
@@ -659,6 +728,10 @@ def main():
         )
     train_word_gate = None
     target_word_gate = None
+    train_query_view_gate = None
+    target_query_view_gate = None
+    train_prf_gate = None
+    target_prf_gate = None
     if args.small_dense_mode == "sparse-gate" and args.small_gate_word_tfidf:
         train_word_gate = build_word_gate_pair(
             "train", train_claims, evidence, train_sparse_pool_top_k
@@ -666,6 +739,56 @@ def main():
         target_word_gate = build_word_gate_pair(
             "target", target_claims, evidence, target_sparse_pool_top_k
         )
+    if args.small_dense_mode == "sparse-gate" and args.small_gate_query_views:
+        train_query_view_gate = build_query_view_gate_pair(
+            "train",
+            train_claims,
+            evidence,
+            train_sparse_pool_top_k,
+            args.small_gate_max_views,
+            args.small_gate_rrf_k,
+        )
+        target_query_view_gate = build_query_view_gate_pair(
+            "target",
+            target_claims,
+            evidence,
+            target_sparse_pool_top_k,
+            args.small_gate_max_views,
+            args.small_gate_rrf_k,
+        )
+    if args.small_dense_mode == "sparse-gate" and args.small_gate_prf:
+        train_prf_seed = merge_rrf(
+            "train_prf_seed_bm25_char",
+            [train_bm25_all, train_char_all],
+            top_k=train_sparse_pool_top_k,
+            rrf_k=args.small_gate_rrf_k,
+        ).pool
+        target_prf_seed = merge_rrf(
+            "target_prf_seed_bm25_char",
+            [target_bm25_all, target_char_all],
+            top_k=target_sparse_pool_top_k,
+            rrf_k=args.small_gate_rrf_k,
+        ).pool
+        train_prf_gate = build_prf_gate_pair(
+            "train",
+            train_claims,
+            evidence,
+            train_prf_seed,
+            train_sparse_pool_top_k,
+            args.small_gate_prf_feedback_top_k,
+            args.small_gate_prf_max_terms,
+        )
+        target_prf_gate = build_prf_gate_pair(
+            "target",
+            target_claims,
+            evidence,
+            target_prf_seed,
+            target_sparse_pool_top_k,
+            args.small_gate_prf_feedback_top_k,
+            args.small_gate_prf_max_terms,
+        )
+        del train_prf_seed, target_prf_seed
+        gc.collect()
     train_bm25 = trim_pool(train_bm25_all, pool_top_k)
     target_bm25 = trim_pool(target_bm25_all, pool_top_k)
     train_char = trim_pool(train_char_all, pool_top_k)
@@ -677,26 +800,58 @@ def main():
 
     small_cache_dir = output_dir / "dense_bge_small_cache"
     if args.small_dense_mode == "sparse-gate":
-        train_gate_sources = [train_bm25_all, train_char_all]
-        target_gate_sources = [target_bm25_all, target_char_all]
+        train_gate_sources = []
+        target_gate_sources = []
+        append_weighted_source(train_gate_sources, train_bm25_all, args.small_gate_bm25_weight)
+        append_weighted_source(target_gate_sources, target_bm25_all, args.small_gate_bm25_weight)
+        append_weighted_source(train_gate_sources, train_char_all, args.small_gate_char_weight)
+        append_weighted_source(target_gate_sources, target_char_all, args.small_gate_char_weight)
         if train_word_gate is not None and target_word_gate is not None:
             train_gate_sources.append(train_word_gate)
             target_gate_sources.append(target_word_gate)
+        if train_query_view_gate is not None and target_query_view_gate is not None:
+            append_weighted_source(
+                train_gate_sources,
+                train_query_view_gate,
+                args.small_gate_query_view_weight,
+            )
+            append_weighted_source(
+                target_gate_sources,
+                target_query_view_gate,
+                args.small_gate_query_view_weight,
+            )
+        if train_prf_gate is not None and target_prf_gate is not None:
+            append_weighted_source(
+                train_gate_sources,
+                train_prf_gate,
+                args.small_gate_prf_weight,
+            )
+            append_weighted_source(
+                target_gate_sources,
+                target_prf_gate,
+                args.small_gate_prf_weight,
+            )
         train_small_gate = merge_rrf(
-            "train_sparse_gate_bm25_char_k500",
+            "train_sparse_gate_weighted",
             train_gate_sources,
             top_k=train_small_prefilter_top_k,
-            rrf_k=500,
+            rrf_k=args.small_gate_rrf_k,
         ).pool
         target_small_gate = merge_rrf(
-            "target_sparse_gate_bm25_char_k500",
+            "target_sparse_gate_weighted",
             target_gate_sources,
             top_k=target_small_prefilter_top_k,
-            rrf_k=500,
+            rrf_k=args.small_gate_rrf_k,
         ).pool
         if args.write_small_prefilter_pool:
             write_pool(train_small_gate, candidate_dir / "train_small_sparse_gate.json")
             write_pool(target_small_gate, candidate_dir / "target_small_sparse_gate.json")
+            if train_query_view_gate is not None and target_query_view_gate is not None:
+                write_pool(train_query_view_gate, candidate_dir / "train_query_view_gate.json")
+                write_pool(target_query_view_gate, candidate_dir / "target_query_view_gate.json")
+            if train_prf_gate is not None and target_prf_gate is not None:
+                write_pool(train_prf_gate, candidate_dir / "train_prf_gate.json")
+                write_pool(target_prf_gate, candidate_dir / "target_prf_gate.json")
         all_small_gate = {**train_small_gate, **target_small_gate}
         all_claims_for_small = combined_claims(train_claims, target_claims)
         small_all, smallq_all, small_timing, smallq_timing = build_sparse_gated_dense_pools(
@@ -810,6 +965,10 @@ def main():
     del train_bm25_all, target_bm25_all, train_char_all, target_char_all
     if train_word_gate is not None:
         del train_word_gate, target_word_gate
+    if train_query_view_gate is not None:
+        del train_query_view_gate, target_query_view_gate
+    if train_prf_gate is not None:
+        del train_prf_gate, target_prf_gate
     gc.collect()
 
     train_rrf = merge_rrf(
