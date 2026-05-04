@@ -12,6 +12,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 
 from a3_factcheck.data import load_json
+from a3_factcheck.rerank.candidates import load_candidate_pool
 from a3_factcheck.retrieval.dense import (
     encode_texts,
     load_encoder,
@@ -97,6 +98,14 @@ def validate_reuse_cache(meta, model_name, pooling, max_length, cache_dir):
 
 
 def build_sparse_pair(name, claims, evidence, top_k, args):
+    if args.source_pool_dir:
+        source_dir = Path(args.source_pool_dir)
+        bm25_path = source_dir / f"{name}_bm25_top{top_k}.json"
+        char_path = source_dir / f"{name}_char_top{top_k}.json"
+        if bm25_path.exists() and char_path.exists():
+            log_stage(f"loading {name} sparse sources top{top_k} from {source_dir}")
+            return load_candidate_pool(bm25_path), load_candidate_pool(char_path)
+
     if args.sparse_mode == "query":
         log_stage(f"building {name} query BM25 pool top{top_k}")
         bm25 = query_bm25_pool(claims, evidence, top_k, k1=1.5, b=0.75)
@@ -451,23 +460,29 @@ def train_component_compressor(
             scores,
             output_k,
         ),
-        "component_quota400_top500": quota_pool(
-            target_claims,
-            scored_pool,
-            target_sources,
-            base_k=min(400, output_k),
-            quotas=[("baseq", 50), ("bm25", 25), ("char", 25)],
-            output_k=output_k,
-        ),
-        "component_quota450_top500": quota_pool(
-            target_claims,
-            scored_pool,
-            target_sources,
-            base_k=min(450, output_k),
-            quotas=[("baseq", 30), ("bm25", 10), ("char", 10)],
-            output_k=output_k,
-        ),
     }
+    if "baseq" in target_sources:
+        quota400 = [("baseq", 50), ("bm25", 25), ("char", 25)]
+        quota450 = [("baseq", 30), ("bm25", 10), ("char", 10)]
+    else:
+        quota400 = [("smallq", 40), ("small", 30), ("bm25", 15), ("char", 15)]
+        quota450 = [("smallq", 20), ("small", 15), ("bm25", 8), ("char", 7)]
+    variants["component_quota400_top500"] = quota_pool(
+        target_claims,
+        scored_pool,
+        target_sources,
+        base_k=min(400, output_k),
+        quotas=[item for item in quota400 if item[0] in target_sources],
+        output_k=output_k,
+    )
+    variants["component_quota450_top500"] = quota_pool(
+        target_claims,
+        scored_pool,
+        target_sources,
+        base_k=min(450, output_k),
+        quotas=[item for item in quota450 if item[0] in target_sources],
+        output_k=output_k,
+    )
     summary = {
         "feature_names": feature_names(source_names),
         "source_names": source_names,
@@ -531,7 +546,17 @@ def main():
         default="",
         help="Optional local-only full/subset BGE-base evidence cache for faster experiments.",
     )
+    parser.add_argument(
+        "--skip-base-subset",
+        action="store_true",
+        help="Do not run the optional BGE-base subset reranker after the BGE-small stage.",
+    )
     parser.add_argument("--write-small-prefilter-pool", action="store_true")
+    parser.add_argument(
+        "--source-pool-dir",
+        default="",
+        help="Optional directory containing train/dev BM25 and char source pools.",
+    )
     parser.add_argument(
         "--small-gate-word-tfidf",
         action="store_true",
@@ -598,8 +623,22 @@ def main():
         "train_small_prefilter_top_k": train_small_prefilter_top_k,
         "small_reuse_cache_dir": args.small_reuse_cache_dir,
         "base_reuse_cache_dir": args.base_reuse_cache_dir,
+        "skip_base_subset": args.skip_base_subset,
+        "source_pool_dir": args.source_pool_dir,
         "small_gate_word_tfidf": args.small_gate_word_tfidf,
         "sparse_mode": args.sparse_mode,
+        "colab_safe_review": {
+            "stage1_uses_bge": False,
+            "stage2_uses_bge_small_only_inside_sparse_gate": (
+                args.small_dense_mode == "sparse-gate"
+            ),
+            "uses_bge_base": not args.skip_base_subset,
+            "requires_precomputed_cache_or_checkpoint": bool(
+                args.small_reuse_cache_dir or args.base_reuse_cache_dir
+            ),
+            "writes_runtime_cache": True,
+            "runtime_cache_is_submission_dependency": False,
+        },
     }
     print(json.dumps(config, indent=2), flush=True)
 
@@ -788,43 +827,48 @@ def main():
     write_pool(train_rrf, candidate_dir / "train_rrf_small_only.json")
     write_pool(target_rrf, candidate_dir / "target_rrf_small_only.json")
 
-    all_claims = combined_claims(train_claims, target_claims)
-    all_rrf = {**train_rrf, **target_rrf}
-    baseq_all, baseq_timing = build_subset_baseq_pool(
-        claims=all_claims,
-        evidence=evidence,
-        candidate_pool=all_rrf,
-        model_name=args.base_subset_model,
-        cache_dir=output_dir / "dense_bge_base_subset_cache",
-        reuse_cache_dir=args.base_reuse_cache_dir,
-        device=device,
-        pool_top_k=pool_top_k,
-        batch_size=args.batch_size,
-        query_batch_size=args.query_batch_size,
-        max_length=args.max_length,
-        query_max_length=args.query_max_length,
-        pooling=args.pooling,
-        cache_dtype=args.base_cache_dtype,
-    )
-    train_baseq = split_pool(baseq_all, train_claims)
-    target_baseq = split_pool(baseq_all, target_claims)
-    write_pool(train_baseq, candidate_dir / "train_bge_baseq_subset.json")
-    write_pool(target_baseq, candidate_dir / "target_bge_baseq_subset.json")
+    baseq_timing = None
+    train_baseq = None
+    target_baseq = None
+    if not args.skip_base_subset:
+        all_claims = combined_claims(train_claims, target_claims)
+        all_rrf = {**train_rrf, **target_rrf}
+        baseq_all, baseq_timing = build_subset_baseq_pool(
+            claims=all_claims,
+            evidence=evidence,
+            candidate_pool=all_rrf,
+            model_name=args.base_subset_model,
+            cache_dir=output_dir / "dense_bge_base_subset_cache",
+            reuse_cache_dir=args.base_reuse_cache_dir,
+            device=device,
+            pool_top_k=pool_top_k,
+            batch_size=args.batch_size,
+            query_batch_size=args.query_batch_size,
+            max_length=args.max_length,
+            query_max_length=args.query_max_length,
+            pooling=args.pooling,
+            cache_dtype=args.base_cache_dtype,
+        )
+        train_baseq = split_pool(baseq_all, train_claims)
+        target_baseq = split_pool(baseq_all, target_claims)
+        write_pool(train_baseq, candidate_dir / "train_bge_baseq_subset.json")
+        write_pool(target_baseq, candidate_dir / "target_bge_baseq_subset.json")
 
     train_sources = {
         "bm25": train_bm25,
         "char": train_char,
         "small": train_small,
         "smallq": train_smallq,
-        "baseq": train_baseq,
     }
     target_sources = {
         "bm25": target_bm25,
         "char": target_char,
         "small": target_small,
         "smallq": target_smallq,
-        "baseq": target_baseq,
     }
+    if train_baseq is not None and target_baseq is not None:
+        train_sources["baseq"] = train_baseq
+        target_sources["baseq"] = target_baseq
     variants, compressor_summary = train_component_compressor(
         train_claims=train_claims,
         target_claims=target_claims,

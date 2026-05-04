@@ -410,23 +410,29 @@ def main():
         "component_histgbdt_top500": rank_predictions(
             dev_claims, dev_row_claims, dev_eids, scores, args.output_k
         ),
-        "component_quota400_top500": quota_pool(
-            dev_claims,
-            scored_pool,
-            dev_pools,
-            base_k=400,
-            quotas=[("baseq", 50), ("bm25", 25), ("char", 25)],
-            output_k=args.output_k,
-        ),
-        "component_quota450_top500": quota_pool(
-            dev_claims,
-            scored_pool,
-            dev_pools,
-            base_k=450,
-            quotas=[("baseq", 30), ("bm25", 10), ("char", 10)],
-            output_k=args.output_k,
-        ),
     }
+    if "baseq" in dev_pools:
+        quota400 = [("baseq", 50), ("bm25", 25), ("char", 25)]
+        quota450 = [("baseq", 30), ("bm25", 10), ("char", 10)]
+    else:
+        quota400 = [("smallq", 40), ("small", 30), ("bm25", 15), ("char", 15)]
+        quota450 = [("smallq", 20), ("small", 15), ("bm25", 8), ("char", 7)]
+    variants["component_quota400_top500"] = quota_pool(
+        dev_claims,
+        scored_pool,
+        dev_pools,
+        base_k=min(400, args.output_k),
+        quotas=[item for item in quota400 if item[0] in dev_pools],
+        output_k=args.output_k,
+    )
+    variants["component_quota450_top500"] = quota_pool(
+        dev_claims,
+        scored_pool,
+        dev_pools,
+        base_k=min(450, args.output_k),
+        quotas=[item for item in quota450 if item[0] in dev_pools],
+        output_k=args.output_k,
+    )
     for name, pool in variants.items():
         candidate_path = candidate_dir / f"{name}.json"
         write_pool(pool, candidate_path)
