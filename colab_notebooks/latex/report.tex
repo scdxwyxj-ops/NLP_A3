@@ -1,0 +1,97 @@
+\section{System Overview}
+
+Our final system is a self-contained four-stage pipeline.  First, a sparse
+candidate generator retrieves top-500 evidence with BM25-style word, character
+n-gram, structured cue, and PRF/query-expansion signals, fused by reciprocal
+rank fusion.  Second, a MiniLM embedding scorer and shallow factual features
+rerank the candidate pool to top-64.  Third, a bounded cross-encoder pass is
+combined with embedding and source-rank signals to select the final top-3
+evidence.  Finally, claim labels are predicted with an enhanced Context20
+TF-IDF one-vs-rest logistic regression classifier.
+
+\section{Enhanced Context20 Classifier}
+
+The original Context20 classifier used a plain concatenation format:
+\texttt{CLAIM} followed by twenty \texttt{EVIDENCE} lines.  This loses two
+important signals.  First, rank 1 and rank 20 evidence become almost equivalent
+to TF-IDF.  Second, factual matching cues used by the top-64 reranker, such as
+word overlap, number overlap, and negation compatibility, are not explicitly
+available to the classifier.
+
+We therefore use an enhanced Context20 representation.  Evidence ranked 1--5 is
+prefixed as \texttt{TOP\_EVIDENCE}, evidence ranked 6--20 as
+\texttt{MID\_EVIDENCE}, and the top five evidence passages are repeated once to
+increase their TF-IDF weight.  Each evidence line also receives compact cue
+tokens for word-overlap bucket, number match/mismatch, and negation
+match/mismatch.  These tokens are treated only as input features; the classifier
+still learns all label decisions through logistic regression.  The final
+classifier uses word 1--2 gram TF-IDF with 60,000 features, balanced
+one-vs-rest logistic regression, and $C=0.125$.
+
+\section{Development Results}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\hline
+Stage & Metric & Value \\
+\hline
+Sparse candidate top-500 & Macro recall & 0.6754 \\
+Embedding + hand top-64 & Macro recall & 0.5784 \\
+CE + embedding/source top-3 & Macro recall & 0.2355 \\
+Final evidence top-3 & Evidence F & 0.2021 \\
+Enhanced Context20 classifier & Accuracy & 0.5195 \\
+Enhanced Context20 classifier & Macro-F1 & 0.4841 \\
+\hline
+\end{tabular}
+\caption{Development-set results for the final self-contained pipeline.}
+\end{table}
+
+\section{Hyperparameter Sensitivity}
+
+The classifier was most sensitive to the logistic regression regularization
+strength.  Stronger regularization improved both accuracy and macro-F1.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrr}
+\hline
+$C$ & Accuracy & Macro-F1 \\
+\hline
+0.125 & 0.5195 & 0.4841 \\
+0.25  & 0.4935 & 0.4544 \\
+0.5   & 0.4740 & 0.4263 \\
+1.0   & 0.4675 & 0.4184 \\
+2.0   & 0.4416 & 0.3825 \\
+4.0   & 0.4545 & 0.3913 \\
+8.0   & 0.4481 & 0.3925 \\
+\hline
+\end{tabular}
+\caption{Development sensitivity to logistic regression regularization.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\hline
+Context format & Accuracy & Macro-F1 \\
+\hline
+Plain Context20 & 0.4351 & 0.3762 \\
+Rank-aware prefix & 0.4351 & 0.3749 \\
+Top5 weighted & 0.4416 & 0.3938 \\
+Rank weighted & 0.4351 & 0.3882 \\
+Enhanced Context20, $C=0.25$ & 0.4935 & 0.4544 \\
+Enhanced Context20, $C=0.125$ & 0.5195 & 0.4841 \\
+\hline
+\end{tabular}
+\caption{Development ablation for context formatting.}
+\end{table}
+
+\section{Model Selection Caveat}
+
+The final $C=0.125$ setting was selected from a development diagnostic
+sensitivity analysis, not from a purely train-only fold selection.  However,
+train-fold diagnostics supported the main design choice: the enhanced context
+representation improved macro-F1 compared with the plain Context20 input,
+indicating that rank and factual cue tokens provide useful signal rather than
+only fitting one development split.

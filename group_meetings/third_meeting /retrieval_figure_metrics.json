@@ -1,0 +1,93 @@
+{
+  "generated_from": "colab_notebooks/outputs/self_generated/run_summary.json",
+  "generated_at": "2026-05-13 00:11:44",
+  "candidate": {
+    "name": "candidate_top500",
+    "method": "Sparse candidate generation via sklearn/scipy sparse RRF",
+    "method_parameters": {
+      "bm25_weight": 0.75,
+      "char_weight": 2.0,
+      "structured_weight": 0.25,
+      "prf_weight": 0.5,
+      "rrf_k": 500.0,
+      "candidate_top_k": 500
+    },
+    "source": "run_summary.json",
+    "source_files": [
+      "colab_notebooks/outputs/self_generated/run_summary.json",
+      "colab_notebooks/outputs/self_generated/target_sparse_fusion_top500.json",
+      "colab_notebooks/outputs/self_generated/train_sparse_fusion_top500.json",
+      "colab_notebooks/outputs/self_generated/candidate_metrics.json"
+    ],
+    "points": [
+      {
+        "top_n": 500,
+        "macro_recall": 0.6754329004329005,
+        "hit_any": 0.9025974025974026,
+        "evidence_f": 0.008273851035835564
+      }
+    ],
+    "curve_completeness": "partial",
+    "missing_curve_points": "Only scalar @N from run_summary is available in current checkpoint."
+  },
+  "top64": {
+    "name": "top64_selector",
+    "method": "Top-64 selector: MiniLM embedding inner-product + shallow feature fusion",
+    "method_parameters": {
+      "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "top64_k": 64,
+      "embedding_weight": 0.65,
+      "hand_weight": 0.35,
+      "hand_model": "HistGradientBoostingClassifier(max_iter=120, learning_rate=0.06, class_weight=balanced)"
+    },
+    "source": "run_summary.json",
+    "source_files": [
+      "colab_notebooks/outputs/self_generated/run_summary.json",
+      "colab_notebooks/outputs/self_generated/target_top64_embedding_hand.json",
+      "colab_notebooks/outputs/self_generated/top64_metrics.json",
+      "colab_notebooks/outputs/self_generated/train_top64_embedding_hand.json"
+    ],
+    "points": [
+      {
+        "top_n": 64,
+        "macro_recall": 0.5783549783549783,
+        "hit_any": 0.8636363636363636,
+        "evidence_f": 0.05173643362054943
+      }
+    ],
+    "curve_completeness": "partial",
+    "missing_curve_points": "Only scalar @N from run_summary is available in current checkpoint."
+  },
+  "top3": {
+    "name": "top3_submission",
+    "method": "Top-3 submission: CE-prefiltered multi-signal fusion",
+    "method_parameters": {
+      "ce_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+      "ce_prefilter_k": 256,
+      "fusion_weights": {
+        "ce_score": 0.25,
+        "embedding_score": 0.25,
+        "ce_rank": 0.0,
+        "embedding_rank": 0.25,
+        "source_rank": 0.25
+      },
+      "top3_k": 3
+    },
+    "source": "run_summary.json",
+    "source_files": [
+      "colab_notebooks/outputs/self_generated/run_summary.json",
+      "colab_notebooks/outputs/self_generated/target_top3_ce_embedding_source_fusion.json",
+      "colab_notebooks/outputs/self_generated/top3_metrics.json"
+    ],
+    "points": [
+      {
+        "top_n": 3,
+        "macro_recall": 0.23549783549783548,
+        "hit_any": 0.4675324675324675,
+        "evidence_f": 0.2021026592455164
+      }
+    ],
+    "curve_completeness": "partial",
+    "missing_curve_points": "Only scalar @N from run_summary is available in current checkpoint."
+  }
+}

@@ -8,6 +8,9 @@ __pycache__/
 data/*.json
 outputs/
 models/
+colab_notebooks/*.json
+colab_notebooks/outputs/
+colab_notebooks/*.executed.ipynb
 
 # Local agent/AI working notes. These are private project memory, not submission artifacts.
 .agent/
