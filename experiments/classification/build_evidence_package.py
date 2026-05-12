@@ -78,7 +78,11 @@ def build_rows(
                 context_top_k,
                 include_semantic,
             )
-            final_ids = [item["evidence_id"] for item in context[:final_top_k]]
+            final_ids = (
+                ids_from_predictions(final_predictions, claim_id, final_top_k)
+                if final_predictions is not None
+                else [item["evidence_id"] for item in context[:final_top_k]]
+            )
         else:
             context = context_from_predictions(
                 context_predictions,

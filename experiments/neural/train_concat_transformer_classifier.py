@@ -1,12 +1,14 @@
 import argparse
 import csv
 import json
+import random
 from pathlib import Path
 
+import numpy as np
 import torch
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, set_seed
 
 from a3_factcheck.evaluation import run_eval
 from a3_factcheck.rerank.api import write_predictions
@@ -14,6 +16,15 @@ from a3_factcheck.rerank.api import write_predictions
 
 LABELS = ["SUPPORTS", "REFUTES", "NOT_ENOUGH_INFO", "DISPUTED"]
 LABEL_TO_ID = {label: index for index, label in enumerate(LABELS)}
+
+
+def seed_everything(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    set_seed(seed)
 
 
 def read_jsonl(path):
@@ -127,8 +138,10 @@ def main():
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--max-length", type=int, default=512)
+    parser.add_argument("--seed", type=int, default=13)
     args = parser.parse_args()
 
+    seed_everything(args.seed)
     train_rows = read_jsonl(args.train)
     dev_rows = read_jsonl(args.dev)
     output_dir = Path(args.output_dir) / args.name
@@ -153,6 +166,9 @@ def main():
 
     curve = []
     dev_eval = None
+    best_eval = None
+    best_epoch = None
+    best_state = None
     for epoch in range(1, args.epochs + 1):
         model.train()
         train_loss = 0.0
@@ -184,9 +200,32 @@ def main():
                 "dev_macro_f1": dev_eval["macro_f1"],
             }
         )
+        if best_eval is None or (
+            dev_eval["accuracy"],
+            dev_eval["macro_f1"],
+            -dev_eval["loss"],
+        ) > (
+            best_eval["accuracy"],
+            best_eval["macro_f1"],
+            -best_eval["loss"],
+        ):
+            best_eval = {
+                key: (value.copy() if isinstance(value, list) else value)
+                for key, value in dev_eval.items()
+            }
+            best_epoch = epoch
+            best_state = {
+                key: value.detach().cpu().clone()
+                for key, value in model.state_dict().items()
+            }
         print(json.dumps(curve[-1], indent=2))
 
-    prediction_json = build_prediction_json(dev_rows, dev_eval["predictions"])
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        model.save_pretrained(output_dir / "best_model")
+        tokenizer.save_pretrained(output_dir / "best_model")
+
+    prediction_json = build_prediction_json(dev_rows, best_eval["predictions"])
     predictions_path = output_dir / "dev_predictions.json"
     write_predictions(prediction_json, predictions_path)
     assignment_eval = run_eval(args.eval_script, predictions_path, args.dev_groundtruth)
@@ -194,17 +233,20 @@ def main():
         "name": args.name,
         "model": args.model,
         "evidence_top_k": args.evidence_top_k,
-        "accuracy": dev_eval["accuracy"],
-        "macro_f1": dev_eval["macro_f1"],
+        "evidence_token_budget": args.evidence_token_budget,
+        "seed": args.seed,
+        "best_epoch": best_epoch,
+        "accuracy": best_eval["accuracy"],
+        "macro_f1": best_eval["macro_f1"],
         "assignment_eval": assignment_eval,
         "learning_curve": curve,
     }
     (output_dir / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    write_confusion(dev_eval["labels"], dev_eval["predictions"], output_dir / "confusion_matrix.csv")
+    write_confusion(best_eval["labels"], best_eval["predictions"], output_dir / "confusion_matrix.csv")
     (output_dir / "classification_report.txt").write_text(
         classification_report(
-            dev_eval["labels"],
-            dev_eval["predictions"],
+            best_eval["labels"],
+            best_eval["predictions"],
             target_names=LABELS,
             labels=list(range(len(LABELS))),
             zero_division=0,
