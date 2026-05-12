@@ -1,0 +1,313 @@
+batch: 2
+round: round18
+isolation_root: round18/outputs
+governance:
+  mode_default: STRICT
+  allowed_input_policy: round18/contracts/round18_execution_contract.md
+  write_namespace_policy: only within assigned pool/task folder
+  required_manifest: run_manifest.json
+  forbidden_inputs:
+    - outputs/round*
+    - old predictions
+    - old feature tables
+    - teacher outputs
+    - pseudo labels
+    - best_model
+    - checkpoints
+    - drive.mount artifacts
+    - stale notebook outputs
+
+pools:
+  O-Sparse:
+    - agent_name: O-S1
+      mode: STRICT
+      method_scope: lexical baseline and index reproducibility
+      read_scope:
+        - data/train-claims.json
+        - data/dev-claims.json
+        - data/evidence.json
+        - round18/contracts/round18_execution_contract.md
+      write_scope:
+        - round18/outputs/o_sparse/o_s1_lexical_index_experiments/
+      target_metrics:
+        - candidate_recall_macro@100
+        - candidate_recall_macro@500
+        - candidate_pool_size_median
+        - wall_clock_per_claim_s
+      exit_criteria:
+        - candidate pool JSON saved with IDs, sparse scores, split tags, and retrieval params
+        - raw JSON index construction fully reproducible
+        - no dense/neural retrieval
+
+    - agent_name: O-S2
+      mode: STRICT
+      method_scope: query decomposition and field/structure-aware sparse routing
+      read_scope:
+        - data/train-claims.json
+        - data/dev-claims.json
+        - data/evidence.json
+        - round18/outputs/o_sparse/o_s1_lexical_index_experiments/
+      write_scope:
+        - round18/outputs/o_sparse/o_s2_structured/
+      target_metrics:
+        - candidate_recall_macro@100
+        - claim_coverage@top50
+        - numeric_date_entity_delta
+      exit_criteria:
+        - decomposed/routed candidate source list exported
+        - numeric/date/unit/entity-aware rules documented
+        - no forbidden-input reads
+
+    - agent_name: O-S3
+      mode: STRICT
+      method_scope: PRF/RM3-lite, lightweight query rewriting, lexical expansion
+      read_scope:
+        - data/train-claims.json
+        - data/dev-claims.json
+        - data/evidence.json
+        - round18/outputs/o_sparse/o_s1_lexical_index_experiments/
+        - round18/outputs/o_sparse/o_s2_structured/
+      write_scope:
+        - round18/outputs/o_sparse/o_s3_prf/
+      target_metrics:
+        - candidate_recall_macro@100
+        - evidence_precision_at_candidate_k
+        - expansion_vocab_size
+      exit_criteria:
+        - expanded queries stored with original query strings
+        - per-claim delta against earlier sparse lanes logged
+        - no model checkpoints or dense indexing
+
+    - agent_name: O-S4
+      mode: STRICT
+      method_scope: sparse fusion, RRF/CombMNZ/weighted sum, layered gating
+      read_scope:
+        - data/train-claims.json
+        - data/dev-claims.json
+        - data/evidence.json
+        - round18/outputs/o_sparse/o_s1_lexical_index_experiments/
+        - round18/outputs/o_sparse/o_s2_structured/
+        - round18/outputs/o_sparse/o_s3_prf/
+      write_scope:
+        - round18/outputs/o_sparse/o_s4_fusion/
+      target_metrics:
+        - top3_macro_recall
+        - candidate_recall_macro@500
+        - top100_hit_any
+      exit_criteria:
+        - union/fusion candidate schema with source scores and fusion method recorded
+        - train-only sparse fusion selection
+
+    - agent_name: O-S5
+      mode: DIAGNOSTIC
+      method_scope: learned sparse feasibility, SPLADE/uniCOIL/DeepImpact
+      read_scope:
+        - data/train-claims.json
+        - data/dev-claims.json
+        - data/evidence.json
+        - round18/outputs/o_sparse/o_s4_fusion/
+      write_scope:
+        - round18/outputs/o_sparse/o_s5_learned_sparse/
+      target_metrics:
+        - candidate_recall_macro@100
+        - inference_time_per_claim_s
+        - model_load_overhead_s
+      exit_criteria:
+        - feasibility result with strict/diagnostic recommendation
+        - no hidden checkpoint dependency
+
+  O-Dense:
+    - agent_name: O-D1
+      mode: STRICT
+      method_scope: light bi-encoder comparison inside sparse topN
+      write_scope:
+        - round18/outputs/o_dense/o_d1_light_biencoder/
+      target_metrics:
+        - top3_evidence_F
+        - top3_macro_recall
+        - rerank_time_ms_p95
+        - memory_peak_gb
+      exit_criteria:
+        - scores computed only for sparse candidate IDs
+        - no full-corpus dense retrieval path
+
+    - agent_name: O-D2
+      mode: STRICT
+      method_scope: stronger bi-encoders inside sparse topN
+      write_scope:
+        - round18/outputs/o_dense/o_d2_strong_biencoder/
+      target_metrics:
+        - top3_evidence_F
+        - top100_context_recall
+        - latency_vs_quality_delta
+      exit_criteria:
+        - model selection by train-only CV
+        - models loaded by runtime name, not local checkpoint
+
+    - agent_name: O-D3
+      mode: STRICT
+      method_scope: bounded cross-encoder rerank on sparse topM
+      write_scope:
+        - round18/outputs/o_dense/o_d3_cross_encoder/
+      target_metrics:
+        - top3_evidence_F
+        - top3_precision
+        - p99_rerank_ms_per_claim
+      exit_criteria:
+        - bounded topM policy logged
+        - sparse candidate ID restriction retained
+
+    - agent_name: O-D4
+      mode: STRICT
+      method_scope: dense score normalization and adaptive topM scheduling
+      write_scope:
+        - round18/outputs/o_dense/o_d4_normalization/
+      target_metrics:
+        - score_calibration_ece
+        - top3_evidence_F
+        - throughput_claims_per_min
+      exit_criteria:
+        - normalization recipe saved
+        - fold-level variance and runtime stats recorded
+
+    - agent_name: O-D5
+      mode: DIAGNOSTIC
+      method_scope: late-interaction rerank feasibility constrained to sparse candidates
+      write_scope:
+        - round18/outputs/o_dense/o_d5_late_interaction/
+      target_metrics:
+        - top3_evidence_F
+        - runtime_cost_per_claim
+        - memory_peak_gb
+      exit_criteria:
+        - strict candidate IDs only
+        - diagnostic-only if infeasible under Colab budget
+
+  O-Aggregate:
+    - agent_name: O-A1
+      mode: STRICT
+      method_scope: leaf feature schema and factual signal features
+      write_scope:
+        - round18/outputs/o_aggregate/o_a1_features/
+      target_metrics:
+        - feature_coverage@claim
+        - top3_evidence_F
+        - macro_recall_top3
+      exit_criteria:
+        - leaf-flat feature table
+        - no nested selector columns
+
+    - agent_name: O-A2
+      mode: STRICT
+      method_scope: calibrated RRF, MMR, Bayesian leaf fusion
+      write_scope:
+        - round18/outputs/o_aggregate/o_a2_calibrated_rank/
+      target_metrics:
+        - top3_evidence_F
+        - top100_context_recall
+        - top100_hit_any
+      exit_criteria:
+        - deterministic fusion weights and tie-break rules logged
+        - train-only weight selection
+
+    - agent_name: O-A3
+      mode: STRICT
+      method_scope: linear/logistic/tree learner comparison on leaf-flat features
+      write_scope:
+        - round18/outputs/o_aggregate/o_a3_learners/
+      target_metrics:
+        - top3_evidence_F
+        - top3_macro_recall
+        - cv_variance_top3_F
+      exit_criteria:
+        - fold IDs and random seeds persisted
+        - no dev-label hyperparameter sweeps
+
+    - agent_name: O-A4
+      mode: STRICT
+      method_scope: pairwise/tiny RankNet feasibility and calibration
+      write_scope:
+        - round18/outputs/o_aggregate/o_a4_pairwise/
+      target_metrics:
+        - top3_evidence_F
+        - training_time_per_fold_min
+        - overfit_gap_top3_F
+      exit_criteria:
+        - fixed sparse+dense leaf inputs only
+        - reproducible fixed seed and fold policy
+
+    - agent_name: O-A5
+      mode: STRICT
+      method_scope: multi-objective top3/top100 selection and utility tuning
+      write_scope:
+        - round18/outputs/o_aggregate/o_a5_multiobjective/
+      target_metrics:
+        - top3_evidence_F
+        - top100_context_recall
+        - classifier_context_coverage@N
+      exit_criteria:
+        - Pareto frontier with constraints and chosen operating points
+
+  O-Classifier:
+    - agent_name: O-C1
+      mode: STRICT
+      method_scope: fixed context width search by train-only CV
+      write_scope:
+        - round18/outputs/o_classifier/o_c1_context_width/
+      target_metrics:
+        - claim_accuracy
+        - claim_macro_f1
+        - harmonic_mean_F_A
+      exit_criteria:
+        - context width chosen by train CV only
+
+    - agent_name: O-C2
+      mode: STRICT
+      method_scope: TF-IDF/logistic and linear SVM baselines
+      write_scope:
+        - round18/outputs/o_classifier/o_c2_baselines/
+      target_metrics:
+        - claim_accuracy
+        - claim_macro_f1
+        - calibration_ece
+      exit_criteria:
+        - scorecards and confusion matrices saved
+
+    - agent_name: O-C3
+      mode: STRICT
+      method_scope: compact Transformer variants
+      write_scope:
+        - round18/outputs/o_classifier/o_c3_transformer/
+      target_metrics:
+        - claim_accuracy
+        - claim_macro_f1
+        - p95_infer_ms
+      exit_criteria:
+        - runtime model pull by name
+        - no checkpoint dependency
+
+    - agent_name: O-C4
+      mode: STRICT
+      method_scope: evidence MIL classifier
+      write_scope:
+        - round18/outputs/o_classifier/o_c4_mil/
+      target_metrics:
+        - claim_accuracy
+        - claim_macro_f1
+      exit_criteria:
+        - evidence aggregation method persisted
+        - context provenance links to fixed topN source files
+
+    - agent_name: O-C5
+      mode: STRICT
+      method_scope: per-evidence NLI/logit fusion and lightweight aggregation
+      write_scope:
+        - round18/outputs/o_classifier/o_c5_nli/
+      target_metrics:
+        - claim_macro_f1
+        - claim_accuracy
+        - nli_agreement_auc
+      exit_criteria:
+        - per-evidence NLI scores and aggregation weights versioned
+        - no old labels/predictions as supervision
+

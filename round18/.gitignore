@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+outputs/
+reports/**/*.json
+reports/**/*.pkl
+reports/**/*.pt
+reports/**/*.bin
+reports/**/*.npy
+reports/**/*.npz
+reports/**/.ipynb_checkpoints/
+reports/.tmp_*
