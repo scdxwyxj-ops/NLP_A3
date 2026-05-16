@@ -215,16 +215,9 @@ def create_dataset_cost_overview(output: Path) -> None:
 
 def create_sparse_multigate(output: Path) -> None:
     third = _load_json(THIRD_MEETING_DIR / "third_tutorial_metrics.json")
-    metrics = _load_json(THIRD_MEETING_DIR / "retrieval_figure_metrics.json")
+    ablation = _load_json(ROOT / "docs" / "research" / "round18" / "reports" / "colab_sklearn_candidate_experiment" / "summary.json")
     sparse_curves = third["sparse_curves"]
 
-    weights = metrics["candidate"]["method_parameters"]
-    source_weights = {
-        "BM25": weights["bm25_weight"],
-        "Char": weights["char_weight"],
-        "Structured": weights["structured_weight"],
-        "PRF": weights["prf_weight"],
-    }
     curve_specs = [
         ("BM25 word gate", "Word", PALETTE[0]),
         ("Character n-gram gate", "Char", PALETTE[1]),
@@ -238,15 +231,33 @@ def create_sparse_multigate(output: Path) -> None:
 
     axw, axc, axb = axes
 
-    names = list(source_weights.keys())
-    vals = np.array(list(source_weights.values()), dtype=float)
-    bar_colors = [PALETTE[i] for i in range(len(names))]
-    axw.bar(names, vals, color=bar_colors, edgecolor="white", linewidth=0.5)
-    axw.set_title("Source weights")
-    axw.set_ylabel("Weight")
-    axw.set_ylim(0, max(vals) * 1.2 if len(vals) else 1.0)
-    for n, v in zip(names, vals):
-        axw.text(n, v + 0.03, f"{v:.2f}", ha="center", va="bottom", fontsize=8.1)
+    ablation_metrics = ablation["metrics"]
+    ablation_names = [
+        "Structured\nalone",
+        "No\nstructured",
+        "+Structured\nsmall weight",
+        "Final\nweighted fusion",
+    ]
+    ablation_vals = np.array(
+        [
+            ablation_metrics["structured"]["macro_recall@500"],
+            ablation_metrics["fused_no_structured"]["macro_recall@500"],
+            ablation_metrics["fused_struct_025"]["macro_recall@500"],
+            ablation_metrics["fused_char_200_struct_025_prf_050"]["macro_recall@500"],
+        ],
+        dtype=float,
+    )
+    y = np.arange(len(ablation_names))
+    axw.barh(y, ablation_vals, color=[PALETTE[2], PALETTE[0], PALETTE[4], PALETTE[3]], edgecolor="white", linewidth=0.5)
+    axw.set_title("Low-recall structured still helps fusion")
+    axw.set_xlabel("Top-500 macro recall")
+    axw.set_yticks(y)
+    axw.set_yticklabels(ablation_names)
+    axw.set_xlim(0, 0.72)
+    axw.invert_yaxis()
+    axw.grid(axis="x", alpha=0.22)
+    for yi, v in zip(y, ablation_vals):
+        axw.text(v + 0.012, yi, _format_pct(v), ha="left", va="center", fontsize=8.1)
 
     for key, label, col in curve_specs:
         pts = sparse_curves[key]

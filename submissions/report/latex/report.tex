@@ -197,16 +197,23 @@ S_{\mathrm{RRF}}(c,d)=
 \]
 where $r_g(c,d)$ is the rank of evidence $d$ under gate $g$, and missing
 documents contribute zero.  The fusion weights $\lambda_g$ are fixed by the
-notebook configuration.  This rank-level fusion avoids direct score calibration
-across heterogeneous sparse views.
+notebook configuration and are treated as a reliability prior: stronger
+standalone gates should receive larger weights, while weaker but complementary
+signals can remain with small non-zero weights.  In our diagnostics the
+structured gate has low standalone recall, but a controlled ablation shows that
+adding it back to the sparse fusion improves the fused top-500 recall.  This
+rank-level fusion avoids direct score calibration across heterogeneous sparse
+views.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.96\textwidth]{figures/acl_sparse_multigate.png}
-\caption{Sparse fusion gives the best top-500 recall.  Character matching is
-the strongest single sparse source, but rank fusion reaches 67.5\% macro recall
-at top-500, supporting the decision to keep several cheap sparse views rather
-than using one lexical gate.}
+\caption{Sparse fusion gives the best top-500 recall, and the structured gate
+is retained for complementarity.  Character matching is the strongest single
+sparse source and receives the largest weight.  Although structured cues are
+weak alone, the ablation panel shows that removing them lowers the fused
+top-500 recall under a controlled sparse-fusion setting, so the final system
+keeps structured evidence with a small non-zero weight.}
 \label{fig:sparse}
 \end{figure*}
 
