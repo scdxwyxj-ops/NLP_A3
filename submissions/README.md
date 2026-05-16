@@ -18,5 +18,5 @@ zip -X ../COMP90042_teamname_resource.zip \
   readme.md
 ```
 
-The PDF report is tracked under `docs/report/latex/report.pdf`; report source
-and Overleaf packaging are also under `docs/report/latex/`.
+The PDF report is tracked under `submissions/report/latex/report.pdf`; report source
+and Overleaf packaging are also under `submissions/report/latex/`.

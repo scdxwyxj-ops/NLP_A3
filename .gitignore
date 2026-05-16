@@ -34,16 +34,16 @@ Thumbs.db
 .playwright-mcp/
 
 # LaTeX build by-products and archived scratch figures.
-docs/report/COMP90042_report_latex*.zip
-docs/report/latex/*.aux
-docs/report/latex/*.bbl
-docs/report/latex/*.blg
-docs/report/latex/*.log
-docs/report/latex/*.out
-docs/report/latex/scripts/__pycache__/
-docs/report/latex/figures/*.png
-!docs/report/latex/figures/acl_sparse_multigate.png
-!docs/report/latex/figures/acl_staging_cost_benefit.png
-!docs/report/latex/figures/acl_top64_diagnostic.png
-!docs/report/latex/figures/acl_shallow_complement.png
-!docs/report/latex/figures/acl_classifier_summary.png
+submissions/report/COMP90042_report_latex*.zip
+submissions/report/latex/*.aux
+submissions/report/latex/*.bbl
+submissions/report/latex/*.blg
+submissions/report/latex/*.log
+submissions/report/latex/*.out
+submissions/report/latex/scripts/__pycache__/
+submissions/report/latex/figures/*.png
+!submissions/report/latex/figures/acl_sparse_multigate.png
+!submissions/report/latex/figures/acl_staging_cost_benefit.png
+!submissions/report/latex/figures/acl_top64_diagnostic.png
+!submissions/report/latex/figures/acl_shallow_complement.png
+!submissions/report/latex/figures/acl_classifier_summary.png

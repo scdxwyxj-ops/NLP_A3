@@ -14,7 +14,7 @@ executable notebook and its README.
 To rebuild the report locally:
 
 ```bash
-cd docs/report/latex
+cd submissions/report/latex
 python scripts/generate_acl_figures.py
 pdflatex -interaction=nonstopmode report.tex
 bibtex report

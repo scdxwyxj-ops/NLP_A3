@@ -36,14 +36,14 @@ The source files for that archive live in `submissions/resource/`.
 
 ## Report
 
-The ACL-style report project is under `docs/report/latex/`.
+The ACL-style report project is under `submissions/report/latex/`.
 
 Useful report artifacts:
 
 ```text
-docs/report/latex/report.tex
-docs/report/latex/report.pdf
-docs/report/latex/overleaf_acl_report.zip
+submissions/report/latex/report.tex
+submissions/report/latex/report.pdf
+submissions/report/latex/overleaf_acl_report.zip
 ```
 
 ## Verification
