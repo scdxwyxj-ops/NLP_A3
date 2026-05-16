@@ -326,8 +326,12 @@ signals produced by the retrieval stages.
 \section{Results}
 
 The final notebook was run in Colab with GPU enabled.
+The course evaluation reports three official development metrics: evidence
+retrieval F-score $F$, claim classification accuracy $A$, and the H-score
+$H=2FA/(F+A)$, the harmonic mean used as the main leaderboard metric.
 Table~\ref{tab:retrieval} reports the main retrieval operating points and
-Table~\ref{tab:final} reports the reproduced development result.
+Table~\ref{tab:final} reports the reproduced official and diagnostic
+development results.
 
 \begin{table}[t]
 \centering
@@ -352,14 +356,15 @@ Submitted top-3 & 0.2021 & 0.2355 & 0.4675 \\
 \toprule
 Metric & Value \\
 \midrule
-Evidence F-score & 0.2021 \\
-Claim accuracy & 0.5000 \\
-Harmonic mean & 0.2879 \\
-Top-3 macro recall & 0.2355 \\
-Classifier macro-F1 & 0.4659 \\
+Official $F$ (evidence retrieval) & 0.2021 \\
+Official $A$ (claim accuracy) & 0.5000 \\
+Official $H$ (harmonic mean) & 0.2879 \\
+Top-3 macro recall (diagnostic) & 0.2355 \\
+Classifier macro-F1 (diagnostic) & 0.4659 \\
 \bottomrule
 \end{tabular}
-\caption{Final Colab-reproduced development result.}
+\caption{Final Colab-reproduced development result.  $F$, $A$, and
+$H=2FA/(F+A)$ are the official course metrics; the other rows are diagnostics.}
 \label{tab:final}
 \end{table}
 
@@ -423,8 +428,8 @@ Table~\ref{tab:classifier-ablation} justifies the classifier input design.
 Plain context reached 0.4351 accuracy and 0.3762 macro-F1, while enhanced
 context reached 0.4935 accuracy and 0.4544 macro-F1 at $C=0.25$.  A diagnostic
 run at $C=0.125$ reached 0.5195 accuracy and 0.4841 macro-F1.  The primary
-reported result, however, is the Colab-reproduced final run in
-Table~\ref{tab:final}.
+reported result, however, is the Colab-reproduced official run in
+Table~\ref{tab:final}, where $F=0.2021$, $A=0.5000$, and $H=0.2879$.
 
 \FloatBarrier
 
