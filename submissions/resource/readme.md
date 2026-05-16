@@ -38,6 +38,12 @@ Apart from optional local course JSONs in `data/`, it does not read saved
 ranked artifacts, checkpoints, or generated outputs. It does download/load the
 declared Hugging Face models at runtime.
 
+If Colab prints that Google Drive mount failed, the runtime cannot see Drive
+files yet even if the notebook itself was opened from Drive. Mount Drive from
+the Colab file pane, or run
+`from google.colab import drive; drive.mount('/content/drive', force_remount=True)`,
+then rerun the first notebook code cell.
+
 ## Files Written
 
 Generated outputs, and optional debug intermediates when enabled, are written
