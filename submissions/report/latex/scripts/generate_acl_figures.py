@@ -302,40 +302,39 @@ def _copy_from_source_with_crop(src: Path, out: Path, min_ratio: float, max_rati
 
 
 def create_staging_cost_benefit(output: Path) -> None:
+    set_style()
+    plt.rcParams.update(
+        {
+            "font.size": 9.8,
+            "axes.titlesize": 10.8,
+            "axes.labelsize": 9.8,
+            "xtick.labelsize": 8.6,
+            "ytick.labelsize": 8.8,
+        }
+    )
     third = _load_json(THIRD_MEETING_DIR / "third_tutorial_metrics.json")["summary"]
     n_claims = len(_load_json(ROOT / "data" / "dev-claims.json"))
     n_evidence = len(_load_json(ROOT / "data" / "evidence.json"))
 
     stages = [
-        ("Candidate\npool", n_claims * 500, third["candidate"]["macro_recall@500"], PALETTE[0]),
-        ("Reranked\ncontext", n_claims * 64, third["top64"]["macro_recall@64"], PALETTE[2]),
-        ("Submitted\nevidence", n_claims * 3, third["top3"]["macro_recall@3"], PALETTE[3]),
-        ("Full evidence\nscoring", n_claims * n_evidence, 0.0, PALETTE[8]),
+        ("Top-500\ncandidate", n_claims * 500, third["candidate"]["macro_recall@500"], PALETTE[0]),
+        ("Top-64\ncontext", n_claims * 64, third["top64"]["macro_recall@64"], PALETTE[2]),
+        ("Top-3\nsubmitted", n_claims * 3, third["top3"]["macro_recall@3"], PALETTE[3]),
     ]
-
-    fig, ax = plt.subplots(1, 1, figsize=_figsize(1660, 920), dpi=300)
-    set_style()
-    for label, cost, recall, color in stages:
-        ax.scatter(cost, recall, s=70, color=color, edgecolor="white", linewidth=0.8, zorder=3)
-        dy = 0.035 if recall > 0.1 else 0.055
-        va = "bottom" if recall > 0.1 else "bottom"
-        ax.text(cost, recall + dy, label, ha="center", va=va, fontsize=8.0)
-    ax.plot([s[1] for s in stages[:3]], [s[2] for s in stages[:3]], color=PALETTE[0], alpha=0.45, linewidth=1.2)
-    ax.set_xscale("log")
-    ax.set_xlabel("Claim-evidence pairs retained or scored (log scale)")
+    fig, ax = plt.subplots(1, 1, figsize=(3.35, 2.55), dpi=300)
+    x = np.arange(len(stages))
+    recalls = [stage[2] for stage in stages]
+    colors = [stage[3] for stage in stages]
+    ax.bar(x, recalls, color=colors, edgecolor="white", linewidth=0.6, width=0.64)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{label}\n{cost:,} pairs" for label, cost, _, _ in stages])
     ax.set_ylabel("Macro recall")
-    ax.set_title("Cost-benefit view of staged retrieval")
-    ax.set_ylim(0, 0.76)
-    ax.grid(True, alpha=0.25)
-    ax.text(
-        0.02,
-        0.05,
-        "The pipeline spends expensive scoring only on progressively smaller pools.",
-        transform=ax.transAxes,
-        ha="left",
-        va="bottom",
-        fontsize=8.0,
-    )
+    ax.set_title("Staged retrieval cost-benefit")
+    ax.set_ylim(0, 0.78)
+    ax.grid(axis="y", alpha=0.24)
+    ax.grid(axis="x", visible=False)
+    for xi, recall in zip(x, recalls):
+        ax.text(xi, recall + 0.025, _format_pct(recall), ha="center", va="bottom", fontsize=8.8)
     fig.tight_layout(pad=0.6)
     fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -419,24 +418,36 @@ def create_feature_fusion(output: Path) -> None:
 
 
 def create_top64_diagnostic(output: Path) -> None:
+    set_style()
+    plt.rcParams.update(
+        {
+            "font.size": 10.0,
+            "axes.titlesize": 10.8,
+            "axes.labelsize": 9.8,
+            "xtick.labelsize": 8.8,
+            "ytick.labelsize": 9.2,
+        }
+    )
     third = _load_json(THIRD_MEETING_DIR / "third_tutorial_metrics.json")
     selector = third["top64_selector_comparison"]
     labels = ["Sparse cutoff top64", "Cross-encoder + factual cues", "Embedding + factual cues"]
     values = [selector[l] for l in labels]
 
-    fig, ax = plt.subplots(1, 1, figsize=_figsize(1880, 1080), dpi=300)
-    set_style()
-    xpos = np.arange(len(labels))
+    fig, ax = plt.subplots(1, 1, figsize=(3.35, 2.35), dpi=300)
+    ypos = np.arange(len(labels))
     colors = [PALETTE[0], PALETTE[2], PALETTE[4]]
-    bars = ax.bar(xpos, values, color=colors, width=0.62, edgecolor="white", linewidth=0.5)
-    ax.set_title("Top-64 selector diagnostic")
-    ax.set_ylabel("Macro recall @64")
-    ax.set_xticks(xpos)
-    ax.set_xticklabels(["Sparse cutoff", "CE + cues", "Emb. + cues"], rotation=12)
-    ax.set_ylim(0, max(values) * 1.2)
+    bars = ax.barh(ypos, values, color=colors, height=0.58, edgecolor="white", linewidth=0.6)
+    ax.set_title("Top-64 selector comparison")
+    ax.set_xlabel("Macro recall @64")
+    ax.set_yticks(ypos)
+    ax.set_yticklabels(["Sparse cutoff", "CE + cues", "Embedding + cues"])
+    ax.set_xlim(0, 0.66)
+    ax.invert_yaxis()
+    ax.grid(axis="x", alpha=0.24)
+    ax.grid(axis="y", visible=False)
     for b in bars:
-        h = b.get_height()
-        ax.text(b.get_x() + b.get_width() / 2, h + max(values) * 0.02, _format_pct(h), ha="center", va="bottom", fontsize=8)
+        w = b.get_width()
+        ax.text(w + 0.012, b.get_y() + b.get_height() / 2, _format_pct(w), ha="left", va="center", fontsize=8.8)
     fig.tight_layout(pad=0.6)
     fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
