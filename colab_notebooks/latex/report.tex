@@ -29,7 +29,7 @@
 We present a Colab-runnable fact-checking system for climate-related claims.
 The system follows the third-meeting tutorial pipeline: sparse score-fused
 candidate retrieval, embedding and factual-cue reranking, bounded
-cross-encoder evidence selection, and a rank- and cue-aware TF-IDF
+cross-encoder evidence selection, and a structured-evidence TF-IDF
 logistic regression classifier.  The final Colab-reproduced development run
 obtains 0.2021 evidence F-score, 0.5000 claim accuracy, 0.2879 harmonic mean,
 and 0.4659 classifier macro-F1.  The main lesson from the tutorial experiments
@@ -102,8 +102,8 @@ comparisons only where they are most useful.  The reranking implementation combi
 MiniLM embedding inner products with hand-built factual features.  The idea is
 multi-scale feature fusion: embeddings capture paraphrase-level semantic
 similarity, while shallow cues capture exact words, numbers, years, negation,
-source rank, and length shape.  The classifier then uses a rank- and cue-aware
-text representation, which preserves evidence rank and factual cue tokens before
+source rank, and length shape.  The classifier then uses a structured evidence
+representation, which preserves evidence rank and factual cue tokens before
 applying a simple TF-IDF logistic regression model.  This keeps classification
 lightweight while passing forward the signals that earlier stages found useful.
 
@@ -141,7 +141,7 @@ The pipeline is organized into four components.  First, a multi-gate sparse
 retriever combines several lexical and factual views of the same corpus.
 Second, a multi-scale feature fusion reranker combines dense semantic similarity
 with shallow factual alignment features.  Third, a bounded neural selector uses
-a cross-encoder only on a prefiltered subset.  Finally, a rank- and cue-aware
+a cross-encoder only on a prefiltered subset.  Finally, a structured-evidence
 classifier converts the selected evidence context into a verdict label.
 
 \subsection{Multi-Gate Sparse Candidate Retrieval}
@@ -290,7 +290,7 @@ by the cross-encoder receive no cross-encoder contribution, but they can still b
 selected through embedding and source-rank terms.  This keeps the neural step
 bounded without discarding useful candidates from the broader sparse pool.
 
-\subsection{Rank- and Cue-Aware Classification}
+\subsection{Structured Evidence Classification}
 
 The classifier predicts the final verdict from a bounded ranked evidence context
 produced by the reranker.  Instead of treating all retrieved passages as an

@@ -52,13 +52,15 @@ FINAL_COLAB_CLASSIFIER = {
 def set_style() -> None:
     plt.rcParams.update(
         {
-            "font.family": "DejaVu Sans",
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "Times", "Liberation Serif", "DejaVu Serif"],
             "font.size": 9.5,
             "axes.titlesize": 11.5,
             "axes.labelsize": 9.5,
             "xtick.labelsize": 8.5,
             "ytick.labelsize": 8.5,
             "legend.fontsize": 8.5,
+            "mathtext.fontset": "stix",
             "axes.grid": True,
             "axes.grid.axis": "both",
             "grid.alpha": 0.2,
@@ -558,9 +560,6 @@ def create_classifier_summary(output: Path) -> None:
         va="top",
         fontsize=8.7,
     )
-    for idx, v in enumerate(conf.sum(axis=1)):
-        ax_cm.text(-0.45, idx, f"n={int(v)}", ha="left", va="center", fontsize=8.1, transform=ax_cm.get_yaxis_transform())
-
     fig.tight_layout(pad=0.6)
     fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
