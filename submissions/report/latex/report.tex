@@ -31,25 +31,25 @@
 \maketitle
 
 \begin{abstract}
-We present a resource-aware climate fact-checking system optimized for limited
-compute, with a standard Colab-style runtime as the concrete constraint.  The
-pipeline stages evidence processing: sparse fusion preserves broad recall,
-embedding plus factual-cue reranking compresses the pool, a bounded
-cross-encoder pass selects submitted evidence, and a TF-IDF logistic classifier
-predicts the verdict from structured evidence text.  This Colab-feasible design
-obtains 0.2021 evidence F-score, 0.5000 claim accuracy, 0.2879 harmonic mean,
-and 0.4659 classifier macro-F1.
+We present a resource-aware climate fact-checking system for realistic
+limited-compute settings such as Colab-style runtimes.  The pipeline stages
+evidence processing: sparse fusion preserves broad recall, embedding plus
+factual-cue reranking compresses the pool, a bounded cross-encoder pass selects
+submitted evidence, and a TF-IDF logistic classifier predicts the verdict from
+structured evidence text.  The resulting system obtains 0.2021 evidence
+F-score, 0.5000 claim accuracy, 0.2879 harmonic mean, and 0.4659 classifier
+macro-F1.
 \end{abstract}
 
 \section{Introduction}
 
 Climate claims are short, compressed, and evidence-sensitive; a useful
 fact-checker must retrieve evidence as well as predict a label.  Practical
-systems also face limited compute, so full-corpus neural scoring is often
-unavailable.  We instantiate this constraint with a Colab-style runtime: no
-external services, saved checkpoints, or precomputed ranked artifacts.  The
-problem is therefore a three-way trade-off among evidence recall, verdict
-accuracy, and runtime.
+systems also face limited compute, making staged retrieval and bounded neural
+scoring central to the design.  In this project, the system is fully
+self-contained at run time and generates ranked pools during notebook
+execution.  The problem is therefore a three-way trade-off among evidence
+recall, verdict accuracy, and runtime.
 
 \textbf{Draft note}: I collected and grouped the following papers for teammates
 to continue the related-work writing.
@@ -64,13 +64,14 @@ Existing work can be organized into four areas:
     \item \textbf{Large-Scale Evidence Retrieval}
     BM25 is fast and scalable \citep{robertson1994okapi}; reciprocal rank
     fusion combines ranked lists without supervision \citep{cormack2009rrf}.
-    These methods suit high-recall candidate generation but remain lexical.
+    These methods provide efficient lexical recall for candidate generation.
 
     \item \textbf{Neural Semantic Reranking}
-    Dense embeddings help when lexical overlap is weak
+    Dense embeddings help when lexical overlap is limited
     \citep{karpukhin2020dpr,reimers2019sentence}; cross-encoders model
-    claim--evidence interaction directly \citep{nogueira2019bert}, but their
-    cost requires sparse prefiltering.
+    claim--evidence interaction directly \citep{nogueira2019bert}.  We place
+    cross-encoder scoring after sparse prefiltering to concentrate neural
+    computation on promising pairs.
 
     \item \textbf{Evidence Aggregation and Factual Cue Fusion}
     Evidence aggregation studies passage combination before classification
@@ -78,15 +79,15 @@ Existing work can be organized into four areas:
     factual signals can be complementary \citep{lee2018improving,padia2018umbc}.
 \end{enumerate}
 
-Our design is literature-aligned but resource-driven.  It first builds a broad
-unsupervised sparse pool from word, character, structured, and PRF gates.  It
-then compresses this pool with MiniLM similarity plus factual features, applies
-a bounded cross-encoder only after prefiltering, and classifies from
-rank-aware, cue-aware evidence text.  Contributions: (i) a staged pipeline for
-the performance--runtime trade-off, (ii) multi-gate sparse retrieval,
-(iii) multi-scale reranking that fuses semantic and shallow factual signals, and
-(iv) diagnostics over sparse gates, fusion, evidence selection, and classifier
-sensitivity.
+Our design follows prior retrieval-and-reranking work and targets
+limited-compute execution.  It first builds a broad unsupervised sparse pool
+from word, character, structured, and PRF gates.  It then compresses this pool
+with MiniLM similarity plus factual features, applies a bounded cross-encoder
+after prefiltering, and classifies from rank-aware, cue-aware evidence text.
+Contributions: (i) a staged pipeline for the performance--runtime trade-off,
+(ii) multi-gate sparse retrieval, (iii) multi-scale reranking that fuses
+semantic and shallow factual signals, and (iv) diagnostics over sparse gates,
+fusion, evidence selection, and classifier sensitivity.
 
 
 \section{Method}
@@ -103,7 +104,7 @@ pipeline:
 \]
 where $\mathcal{A}(c)$ is a broad sparse pool, $\mathcal{B}(c)$ a reranked
 context pool, and $\mathcal{D}(c)$ the submitted evidence.  Cheap stages maximize
-recall; expensive semantic models operate only after pruning.  The four
+recall; semantic models operate on progressively smaller pools.  The four
 components are multi-gate sparse retrieval, multi-scale reranking, bounded
 cross-encoder selection, and structured-evidence classification.
 
@@ -111,8 +112,9 @@ cross-encoder selection, and structured-evidence classification.
 \centering
 \includegraphics[width=\linewidth]{figures/acl_staging_cost_benefit.png}
 \caption{Staged pruning keeps recall while reducing pair count.  The candidate
-and context pools retain most recoverable evidence without full-corpus neural
-scoring, which would require about 186 million development pairs.}
+and context pools retain most recoverable evidence by using neural scoring on
+progressively smaller pools; full-corpus neural scoring would require about 186
+million development pairs.}
 \label{fig:staging}
 \end{figure}
 
@@ -126,14 +128,13 @@ scoring, which would require about 186 million development pairs.}
 
 \subsection{Multi-Gate Sparse Candidate Retrieval}
 
-The sparse stage maximizes recall.  A gate is a feature construction, not a new
-scoring formula: the four gates differ in analyzer $a_g(\cdot)$ and vocabulary
-$V_g$, while sharing BM25.  Let $q_g(c)$ and $x_g(d)$ be the resulting count
-vectors.
+The sparse stage maximizes recall by applying one BM25 scoring operator to
+multiple feature spaces.  The four gates differ in analyzer $a_g(\cdot)$ and
+vocabulary $V_g$.  Let $q_g(c)$ and $x_g(d)$ be the resulting count vectors.
 
 \paragraph{Word gate.}
 Word terms give the direct lexical view: content-word overlap raises scores and
-IDF discounts frequent, weakly discriminative words.
+IDF weighting emphasizes discriminative claim terms.
 
 \paragraph{Character gate.}
 Character n-grams capture partial overlap, inflection, hyphenation, and spelling
@@ -141,8 +142,7 @@ variation missed by exact words.
 
 \paragraph{Structured gate.}
 Structured cues keep numbers, years, salient capitalized terms, and negation
-markers.  Standalone recall is low, but the cues add factual constraints that
-lexical views may lose.
+markers.  These cues add factual constraints that lexical views may lose.
 
 \paragraph{Pseudo-relevance feedback gate.}
 PRF expands the word query using high-ranked feedback evidence.  If
@@ -167,8 +167,9 @@ term $t$ in document $d$,
 {f_{d,t}+k_1(1-b+b|d|/\overline{|d|})}.
 \end{aligned}
 \]
-IDF is part of BM25, not a separate gate; it discounts high-frequency features.
-The query side remains a count vector, giving the sparse dot product
+The inverse-document-frequency factor suppresses common features, so rare
+claim-specific evidence terms contribute more than corpus-wide background
+terms.  The query side remains a count vector, giving the sparse dot product
 \[
 s_g(c,d)=q_g(c)^\top \operatorname{BM25}_g(d).
 \]
@@ -185,24 +186,24 @@ S_{\mathrm{RRF}}(c,d)=
 \sum_{g\in G}\frac{\lambda_g}{K_{\mathrm{RRF}}+r_g(c,d)},
 \]
 where missing documents contribute zero.  We treat $\lambda_g$ as a reliability
-prior: stronger standalone gates receive larger weights, while weak but
-complementary signals can retain small non-zero weights.  Structured recall is
-low alone, yet ablation shows it improves fused top-500 recall; RRF also avoids
-cross-gate score calibration.
+prior: stronger standalone gates receive larger weights, and complementary
+factual gates retain smaller weights.  The structured gate contributes
+complementary recall in fusion, as shown by ablation; RRF also removes the need
+for cross-gate score calibration.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.96\textwidth]{figures/acl_sparse_multigate.png}
 \caption{Sparse fusion gives the best top-500 recall and retains structured
 cues for complementarity.  Character matching is the strongest single source;
-structured cues are weak alone, but removing them lowers fused recall under a
-controlled ablation, so the final system keeps a small structured weight.}
+structured cues improve fused recall under controlled ablation, so the final
+system keeps a small structured weight.}
 \label{fig:sparse}
 \end{figure*}
 
 Figures~\ref{fig:staging} and~\ref{fig:sparse} justify the candidate stage:
-fusion improves top-500 recall over any single source, and staging avoids
-full-corpus neural scoring.
+fusion improves top-500 recall over any single source, and staging concentrates
+neural scoring on high-value candidate pools.
 
 \subsection{Multi-Scale Feature Fusion}
 
@@ -229,7 +230,7 @@ S_{\mathrm{ctx}}(c,d)=
 +(1-\alpha)\,p_{\mathrm{feat}}(c,d),
 \]
 where $\widetilde{s}_{\mathrm{emb}}$ is claim-wise normalized.  Embeddings handle
-semantic relatedness; factual features guard against number, negation, and weak
+semantic relatedness; factual features guard against number, negation, and
 lexical-grounding errors.
 
 \begin{figure}[t]
@@ -245,10 +246,10 @@ factual cues.}
 \subsection{Bounded Neural Evidence Selection}
 
 The submitted evidence stage uses a stricter operating point than the classifier
-context.  Because cross-encoders jointly encode claim and evidence but are
-expensive, we apply them only after sparse/embedding prefiltering and normalize
-their scores within each claim.  The final evidence score fuses cross-encoder
-confidence, embedding confidence, embedding rank, and sparse source rank:
+context.  Cross-encoders jointly encode claim and evidence, so we reserve them
+for the sparse/embedding-prefiltered pool and normalize their scores within each
+claim.  The final evidence score fuses cross-encoder confidence, embedding
+confidence, embedding rank, and sparse source rank:
 \[
 \begin{aligned}
 S_{\mathrm{sub}}(c,d)={}&
@@ -258,35 +259,35 @@ S_{\mathrm{sub}}(c,d)={}&
 +\frac{\beta_4}{\tau+r_{\mathrm{src}}}.
 \end{aligned}
 \]
-Coefficients are fixed.  Candidates outside the cross-encoder subset receive no
-CE contribution but can still be selected by embedding and source-rank terms,
-bounding neural cost without discarding useful sparse candidates.
+Coefficients are fixed.  Candidates outside the cross-encoder subset remain
+ranked by embedding and source-rank terms, which keeps neural cost bounded and
+retains useful sparse candidates.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.96\textwidth]{figures/acl_shallow_complement.png}
-\caption{Factual cues preserve or improve semantic ranking.  Gains are small
-for the strong cross-encoder but clearer for embedding inner product, supporting
-feature fusion over a purely semantic selector.}
+\caption{Factual cues preserve or improve semantic ranking.  Cue gains are
+larger for embedding inner product and smaller for the already strong
+cross-encoder, supporting feature fusion over a purely semantic selector.}
 \label{fig:shallow-complement}
 \end{figure*}
 
 Figures~\ref{fig:top64-selector}, \ref{fig:top64-score-distribution}, and
-\ref{fig:shallow-complement} justify multi-scale fusion: factual cues are not
-standalone rules, but complements that improve semantic ranking and stabilize
-the retained candidate pool.
+\ref{fig:shallow-complement} justify multi-scale fusion: factual cues act as
+complementary signals that improve semantic ranking and stabilize the retained
+candidate pool.
 
 \subsection{Structured Evidence Classification}
 
-The classifier predicts from a bounded ranked evidence context.  Rather than an
-unordered passage block, it constructs
+The classifier predicts from a bounded ordered evidence context:
 \[
 x_c=[\mathrm{claim}; z_1,z_1,\ldots,z_m,z_m,z_{m+1},\ldots,z_L],
 \]
 where top evidence is repeated to raise TF-IDF weight.  Each evidence line also
 gets a rank prefix plus word-overlap, numeric-match, and negation-match cue
-tokens.  These are learnable tokens, not rules.  Let $v_c$ be the TF-IDF vector;
-a one-vs-rest logistic model learns one binary classifier per label:
+tokens.  The logistic model learns weights for these cue tokens from training
+data.  Let $v_c$ be the TF-IDF vector; a one-vs-rest logistic model learns one
+binary classifier per label:
 \[
 P(y=k\mid c)=\sigma(\theta_k^\top v_c+b_k).
 \]
@@ -359,8 +360,8 @@ report.}
 
 Figures~\ref{fig:recall-vs-k} and~\ref{fig:final-classifier} show the final
 retrieval--classification behavior.  Remaining classification errors mainly
-confuse \LabelSupports{}, \LabelRefutes{}, and \LabelNEI{}; \LabelDisputed{} has
-only 18 development examples.
+confuse \LabelSupports{}, \LabelRefutes{}, and \LabelNEI{}.  Label support is
+uneven, with 18 \LabelDisputed{} development examples.
 
 \begin{table*}[t]
 \centering
@@ -399,14 +400,15 @@ $C$ & Acc. & Macro-F1 \\
 \end{minipage}
 \caption{Classifier ablations.  Rank-aware, top-weighted, factual-cue-enhanced
 context improves over plain concatenation; the enhanced classifier peaks at
-$C=0.125$ in the diagnostic sweep.}
+$C=0.125$ in the development sweep.}
 \label{tab:classifier-ablation}
 \end{table*}
 
 Table~\ref{tab:classifier-ablation} justifies the classifier input: enhanced
 context improves over plain context at $C=0.25$ (0.4935/0.4544 vs.
-0.4351/0.3762), and the diagnostic best is $C=0.125$ (0.5195/0.4841).  The
-reported Colab run is Table~\ref{tab:final}: $F=0.2021$, $A=0.5000$, $H=0.2879$.
+0.4351/0.3762), and the development sweep selects $C=0.125$ (0.5195/0.4841).
+The reported Colab run is Table~\ref{tab:final}: $F=0.2021$, $A=0.5000$,
+$H=0.2879$.
 
 \FloatBarrier
 
