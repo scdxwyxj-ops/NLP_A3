@@ -453,6 +453,69 @@ def create_top64_diagnostic(output: Path) -> None:
     plt.close(fig)
 
 
+def create_top64_score_distribution(output: Path) -> None:
+    set_style()
+    plt.rcParams.update(
+        {
+            "font.size": 10.0,
+            "axes.titlesize": 11.0,
+            "axes.labelsize": 9.8,
+            "xtick.labelsize": 8.8,
+            "ytick.labelsize": 9.2,
+        }
+    )
+    pool = _load_json(ROOT / "data" / "outputs" / "colab_runtime" / "self_generated" / "target_top64_embedding_hand.json")
+    score_names = ["embedding_score", "hand_score", "top64_score"]
+    labels = ["Embedding", "Factual cues", "Fused top-64"]
+    arrays = []
+    for name in score_names:
+        vals = [
+            float(row[name])
+            for rows in pool.values()
+            for row in rows
+            if name in row and row[name] is not None
+        ]
+        arrays.append(np.asarray(vals, dtype=float))
+
+    means = [float(x.mean()) for x in arrays]
+    stds = [float(x.std()) for x in arrays]
+
+    fig, ax = plt.subplots(1, 1, figsize=(3.35, 2.45), dpi=300)
+    try:
+        box = ax.boxplot(
+            arrays,
+            tick_labels=labels,
+            showfliers=False,
+            patch_artist=True,
+            widths=0.55,
+        )
+    except TypeError:
+        box = ax.boxplot(
+            arrays,
+            labels=labels,
+            showfliers=False,
+            patch_artist=True,
+            widths=0.55,
+        )
+    for patch, color in zip(box["boxes"], [PALETTE[0], PALETTE[4], PALETTE[2]]):
+        patch.set(facecolor=color, alpha=0.22, edgecolor="black", linewidth=0.8)
+    for median in box["medians"]:
+        median.set(color=PALETTE[1], linewidth=1.3)
+    xs = np.arange(1, len(arrays) + 1)
+    ax.scatter(xs, means, marker="D", s=24, color=PALETTE[3], label="Mean", zorder=3)
+    for x, mean, std in zip(xs, means, stds):
+        ax.text(x, mean + 0.045, f"{mean:.3f}\n$\\sigma$={std:.3f}", ha="center", va="bottom", fontsize=7.4)
+
+    ax.set_title("Fused top-64 scores are higher and stabler")
+    ax.set_ylabel("Score")
+    ax.set_ylim(0.0, 1.02)
+    ax.grid(axis="y", alpha=0.22)
+    ax.legend(frameon=False, loc="lower right")
+    fig.tight_layout(pad=0.55)
+    fig.savefig(output, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def create_shallow_complement(output: Path) -> None:
     _copy_from_source_with_crop(
         ROOT / "docs" / "group_meetings" / "second_meeting" / "figures" / "round18_revised_shallow_complement_two_panel_rn.png",
@@ -633,6 +696,7 @@ def main() -> None:
     create_staging_cost_benefit(FIG_DIR / "acl_staging_cost_benefit.png")
     create_feature_fusion(FIG_DIR / "acl_feature_fusion.png")
     create_top64_diagnostic(FIG_DIR / "acl_top64_diagnostic.png")
+    create_top64_score_distribution(FIG_DIR / "acl_top64_score_distribution.png")
     create_shallow_complement(FIG_DIR / "acl_shallow_complement.png")
     create_top3_evidence_fusion(FIG_DIR / "acl_top3_evidence_fusion.png")
     create_classifier_summary(FIG_DIR / "acl_classifier_summary.png")

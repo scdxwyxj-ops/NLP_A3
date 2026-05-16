@@ -232,6 +232,16 @@ where $\widetilde{s}_{\mathrm{emb}}$ is claim-wise normalized.  Embeddings handl
 semantic relatedness; factual features guard against number, negation, and weak
 lexical-grounding errors.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/acl_top64_score_distribution.png}
+\caption{Top-64 fusion raises the retained-candidate score distribution and
+reduces dispersion.  In the Colab diagnostic, fused scores have mean/std =
+0.682/0.106, compared with 0.525/0.109 for embeddings and 0.532/0.181 for
+factual cues.}
+\label{fig:top64-score-distribution}
+\end{figure}
+
 \subsection{Bounded Neural Evidence Selection}
 
 The submitted evidence stage uses a stricter operating point than the classifier
@@ -261,9 +271,10 @@ feature fusion over a purely semantic selector.}
 \label{fig:shallow-complement}
 \end{figure*}
 
-Figures~\ref{fig:top64-selector} and~\ref{fig:shallow-complement} justify
-multi-scale fusion: factual cues are not standalone rules, but complements to
-semantic similarity.
+Figures~\ref{fig:top64-selector}, \ref{fig:top64-score-distribution}, and
+\ref{fig:shallow-complement} justify multi-scale fusion: factual cues are not
+standalone rules, but complements that improve semantic ranking and stabilize
+the retained candidate pool.
 
 \subsection{Structured Evidence Classification}
 
