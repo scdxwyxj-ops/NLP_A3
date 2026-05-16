@@ -318,6 +318,16 @@ Submitted top-3 & 0.2021 & 0.2355 & 0.4675 \\
 \label{tab:retrieval}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/acl_recall_vs_k.png}
+\caption{Recall-vs-K curves show the pruning trade-off behind the selected
+operating points.  The sparse pool keeps broad top-500 recall, the reranked
+pool preserves most recoverable evidence at top-64, and the submitted top-3 is
+the strict evidence set used for scoring.}
+\label{fig:recall-vs-k}
+\end{figure}
+
 \begin{table}[t]
 \centering
 \small
@@ -341,15 +351,16 @@ and classification behavior.}
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.96\textwidth]{figures/acl_classifier_summary.png}
-\caption{Classifier errors concentrate among the three main labels.  The final
-Colab run is strongest on \LabelSupports{}; \LabelDisputed{} remains hard
-because it is rare and often evidence-conflict dependent.}
+\caption{Classifier diagnostics.  Raw counts show total error mass,
+row-normalized confusion controls for class support, and per-class
+precision/recall/F1 summarizes the classification report.}
 \label{fig:final-classifier}
 \end{figure*}
 
-Figure~\ref{fig:final-classifier} shows that remaining errors mainly confuse
-\LabelSupports{}, \LabelRefutes{}, and \LabelNEI{}; \LabelDisputed{} has only
-18 development examples.
+Figures~\ref{fig:recall-vs-k} and~\ref{fig:final-classifier} show the final
+retrieval--classification behavior.  Remaining classification errors mainly
+confuse \LabelSupports{}, \LabelRefutes{}, and \LabelNEI{}; \LabelDisputed{} has
+only 18 development examples.
 
 \begin{table*}[t]
 \centering

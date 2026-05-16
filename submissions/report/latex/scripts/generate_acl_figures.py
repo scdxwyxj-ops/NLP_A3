@@ -24,6 +24,7 @@ SCRIPT_DIR = ROOT / "submissions" / "report" / "latex" / "scripts"
 THIRD_MEETING_DIR = ROOT / "docs" / "group_meetings" / "third_meeting"
 REPO = ROOT / "docs" / "research" / "round18" / "reports" / "tutorial_rn_curves"
 TUTORIAL_CURVE_CSV = REPO / "tutorial_rn_curves_summary.csv"
+COLAB_OUTPUT_DIR = ROOT / "data" / "outputs" / "colab_runtime" / "self_generated"
 
 PALETTE = [
     "#4e79a7",
@@ -584,6 +585,58 @@ def create_top3_evidence_fusion(output: Path) -> None:
     plt.close(fig)
 
 
+def _evidence_recall_at_k(claims: Dict[str, dict], pool: Dict[str, list], k: int) -> float:
+    recalls = []
+    for cid, claim in claims.items():
+        gold = set(claim.get("evidences", []))
+        pred = {row["evidence_id"] for row in pool.get(cid, [])[:k]}
+        recalls.append(len(gold & pred) / len(gold) if gold else 0.0)
+    return float(np.mean(recalls)) if recalls else 0.0
+
+
+def create_recall_vs_k(output: Path) -> None:
+    set_style()
+    plt.rcParams.update(
+        {
+            "font.size": 10.0,
+            "axes.titlesize": 11.0,
+            "axes.labelsize": 9.8,
+            "xtick.labelsize": 8.6,
+            "ytick.labelsize": 9.0,
+            "legend.fontsize": 8.4,
+        }
+    )
+    claims = _load_json(ROOT / "data" / "dev-claims.json")
+    sparse_pool = _load_json(COLAB_OUTPUT_DIR / "target_sparse_fusion_top500.json")
+    top64_pool = _load_json(COLAB_OUTPUT_DIR / "target_top64_embedding_hand.json")
+    top3_pool = _load_json(COLAB_OUTPUT_DIR / "target_top3_ce_embedding_source_fusion.json")
+    specs = [
+        ("Sparse top-500", sparse_pool, [1, 3, 5, 10, 20, 32, 64, 100, 200, 500], PALETTE[0]),
+        ("Top-64 reranked", top64_pool, [1, 3, 5, 10, 20, 32, 64], PALETTE[2]),
+        ("Submitted top-3", top3_pool, [1, 2, 3], PALETTE[3]),
+    ]
+
+    fig, ax = plt.subplots(1, 1, figsize=(3.35, 2.45), dpi=300)
+    for label, pool, ks, color in specs:
+        recalls = [_evidence_recall_at_k(claims, pool, k) for k in ks]
+        ax.plot(ks, recalls, marker="o", linewidth=1.45, markersize=4.4, color=color, label=label)
+        ax.text(ks[-1] * 1.03, recalls[-1], _format_pct(recalls[-1]), ha="left", va="center", fontsize=7.8, color=color)
+
+    ax.set_title("Recall decreases with evidence budget")
+    ax.set_xlabel("Top-k evidence retained")
+    ax.set_ylabel("Macro recall")
+    ax.set_xscale("log")
+    ax.set_xlim(0.9, 650)
+    ax.set_ylim(0.0, 0.76)
+    ax.set_xticks([1, 3, 10, 32, 64, 100, 500])
+    ax.set_xticklabels(["1", "3", "10", "32", "64", "100", "500"])
+    ax.grid(True, alpha=0.24)
+    ax.legend(frameon=False, loc="lower right")
+    fig.tight_layout(pad=0.55)
+    fig.savefig(output, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _class_report_from_matrix(matrix: List[List[float]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     cm = np.asarray(matrix, dtype=float)
     tp = np.diag(cm)
@@ -605,24 +658,40 @@ def create_classifier_summary(output: Path) -> None:
         for l, p, r, fi in zip(labels, precision, recall, f1)
     }
 
-    fig, (ax_cm, ax_bars) = plt.subplots(1, 2, figsize=_figsize(3200, 1100), dpi=300)
+    fig, (ax_raw, ax_norm, ax_bars) = plt.subplots(1, 3, figsize=_figsize(3300, 980), dpi=300)
     set_style()
 
-    im = ax_cm.imshow(conf, cmap="Blues", aspect="auto")
-    ax_cm.set_title("Confusion matrix")
-    ax_cm.set_xticks(np.arange(len(labels)))
-    ax_cm.set_yticks(np.arange(len(labels)))
-    ax_cm.set_xticklabels(labels, rotation=20, ha="right")
-    ax_cm.set_yticklabels(labels)
-    ax_cm.set_xlabel("Predicted")
-    ax_cm.set_ylabel("True")
+    im = ax_raw.imshow(conf, cmap="Blues", aspect="auto")
+    ax_raw.set_title("Raw confusion")
+    ax_raw.set_xticks(np.arange(len(labels)))
+    ax_raw.set_yticks(np.arange(len(labels)))
+    ax_raw.set_xticklabels(labels, rotation=22, ha="right")
+    ax_raw.set_yticklabels(labels)
+    ax_raw.set_xlabel("Predicted")
+    ax_raw.set_ylabel("True")
     for i in range(conf.shape[0]):
         for j in range(conf.shape[1]):
             color = "white" if conf[i, j] > conf.max() * 0.65 else "black"
-            ax_cm.text(j, i, f"{int(conf[i, j])}", ha="center", va="center", color=color, fontsize=8.4)
-    cbar = fig.colorbar(im, ax=ax_cm, fraction=0.046, pad=0.04)
+            ax_raw.text(j, i, f"{int(conf[i, j])}", ha="center", va="center", color=color, fontsize=7.8)
+    cbar = fig.colorbar(im, ax=ax_raw, fraction=0.046, pad=0.04)
     cbar.ax.tick_params(labelsize=8)
     cbar.set_label("Count")
+
+    row_norm = np.divide(conf, conf.sum(axis=1, keepdims=True), out=np.zeros_like(conf), where=conf.sum(axis=1, keepdims=True) > 0)
+    im_norm = ax_norm.imshow(row_norm, cmap="Blues", aspect="auto", vmin=0, vmax=1)
+    ax_norm.set_title("Row-normalized")
+    ax_norm.set_xticks(np.arange(len(labels)))
+    ax_norm.set_yticks(np.arange(len(labels)))
+    ax_norm.set_xticklabels(labels, rotation=22, ha="right")
+    ax_norm.set_yticklabels(labels)
+    ax_norm.set_xlabel("Predicted")
+    for i in range(row_norm.shape[0]):
+        for j in range(row_norm.shape[1]):
+            color = "white" if row_norm[i, j] > 0.45 else "black"
+            ax_norm.text(j, i, _format_pct(row_norm[i, j]), ha="center", va="center", color=color, fontsize=7.4)
+    cbar_norm = fig.colorbar(im_norm, ax=ax_norm, fraction=0.046, pad=0.04)
+    cbar_norm.ax.tick_params(labelsize=8)
+    cbar_norm.set_label("Row rate")
 
     metrics = [("Precision", [per_class[l]["precision"] for l in labels], PALETTE[0]),
                ("Recall", [per_class[l]["recall"] for l in labels], PALETTE[2]),
@@ -632,7 +701,7 @@ def create_classifier_summary(output: Path) -> None:
     for idx, (name, vals, color) in enumerate(metrics):
         ax_bars.bar(x + idx * width, vals, width, label=name, color=color, edgecolor="white", linewidth=0.5)
     ax_bars.set_xticks(x + width)
-    ax_bars.set_xticklabels(labels, rotation=12, ha="right")
+    ax_bars.set_xticklabels(labels, rotation=15, ha="right")
     ax_bars.set_title("Per-class metrics")
     ax_bars.set_ylim(0, 1)
     ax_bars.set_ylabel("Score")
@@ -699,6 +768,7 @@ def main() -> None:
     create_top64_score_distribution(FIG_DIR / "acl_top64_score_distribution.png")
     create_shallow_complement(FIG_DIR / "acl_shallow_complement.png")
     create_top3_evidence_fusion(FIG_DIR / "acl_top3_evidence_fusion.png")
+    create_recall_vs_k(FIG_DIR / "acl_recall_vs_k.png")
     create_classifier_summary(FIG_DIR / "acl_classifier_summary.png")
     create_classifier_sensitivity(FIG_DIR / "acl_classifier_sensitivity.png")
 
