@@ -19,8 +19,8 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[3]
-FIG_DIR = ROOT / "colab_notebooks" / "latex" / "figures"
-SCRIPT_DIR = ROOT / "colab_notebooks" / "latex" / "scripts"
+FIG_DIR = ROOT / "report" / "latex" / "figures"
+SCRIPT_DIR = ROOT / "report" / "latex" / "scripts"
 THIRD_MEETING_DIR = ROOT / "group_meetings" / "third_meeting "
 REPO = ROOT / "round18" / "reports" / "tutorial_rn_curves"
 TUTORIAL_CURVE_CSV = REPO / "tutorial_rn_curves_summary.csv"

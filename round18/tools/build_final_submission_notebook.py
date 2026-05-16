@@ -7,14 +7,7 @@ import nbformat as nbf
 
 
 ROOT = Path(__file__).resolve().parents[2]
-NOTEBOOK_PATHS = [
-    ROOT / "notebooks" / "GroupID_COMP90042_Project_2026.ipynb",
-    ROOT / "colab_notebooks" / "GroupID_COMP90042_Project_2026.ipynb",
-    ROOT
-    / "submissions"
-    / "COMP90042_teamname_resource"
-    / "GroupID_COMP90042_Project_2026.ipynb",
-]
+CANONICAL_NOTEBOOK_PATH = ROOT / "colab_notebooks" / "GroupID_COMP90042_Project_2026.ipynb"
 
 
 def md(text: str) -> nbf.NotebookNode:
@@ -410,11 +403,11 @@ def build_notebook() -> nbf.NotebookNode:
 
 
 def main() -> None:
-    nb = build_notebook()
-    for path in NOTEBOOK_PATHS:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        nbf.write(nb, path)
-        print(f"Wrote {path}")
+    raise SystemExit(
+        "This legacy artifact-backed notebook generator is disabled. "
+        f"The canonical self-contained submission notebook is {CANONICAL_NOTEBOOK_PATH}. "
+        "Do not regenerate notebooks/ or submissions/COMP90042_teamname_resource/ from this script."
+    )
 
 
 if __name__ == "__main__":

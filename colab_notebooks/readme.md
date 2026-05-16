@@ -1,6 +1,10 @@
 # COMP90042 Project Colab Upload Bundle
 
 This folder contains a self-contained Colab notebook.
+The canonical submission zip built from these files is stored at
+`../submissions/COMP90042_teamname_resource.zip`. Report sources are kept
+separately under `../report/latex/` so they are not mixed into the Colab runtime
+directory.
 
 ## Files Read
 
