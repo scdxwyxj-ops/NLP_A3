@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 
 # fix import path
 sys.path.append("src")
@@ -29,8 +30,11 @@ for claim_id, data in dev_data.items():
         "evidences": ev_ids
     }
 
+output_path = Path("data/outputs/dev-output.json")
+output_path.parent.mkdir(parents=True, exist_ok=True)
+
 # save output
-with open("dev-output.json", "w") as f:
+with output_path.open("w", encoding="utf-8") as f:
     json.dump(predictions, f, indent=2)
 
-print(" dev-output.json created")
+print(f"{output_path} created")

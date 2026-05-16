@@ -1,7 +1,7 @@
 """Backward-compatible wrapper for the TF-IDF retrieval experiment.
 
 Prefer running:
-    PYTHONPATH=src python experiments/retrieval/tfidf_baseline.py
+    PYTHONPATH=src python src/experiments/retrieval/tfidf_baseline.py
 """
 
 import sys

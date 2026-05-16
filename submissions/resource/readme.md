@@ -2,8 +2,8 @@
 
 This folder contains a self-contained Colab notebook.
 The canonical submission zip built from these files is stored at
-`../submissions/COMP90042_teamname_resource.zip`. Report sources are kept
-separately under `../report/latex/` so they are not mixed into the Colab runtime
+`../COMP90042_teamname_resource.zip`. Report sources are kept separately under
+`../../docs/report/latex/` so they are not mixed into the Colab runtime
 directory.
 
 ## Files Read
@@ -14,7 +14,7 @@ The notebook reads only course JSON files from this folder, or from common Colab
 - `dev-claims.json` or `test-claims-unlabelled.json`
 - `evidence.json`
 
-It does not read `round18/`, repository `data/`, `submissions/`, `notebooks/`, saved ranked artifacts, or any path outside the selected notebook data folder. It does download/load the declared Hugging Face models at runtime.
+It does not read repository-level `docs/`, `data/`, `model/`, `src/`, saved ranked artifacts, or any path outside the selected notebook data folder. It does download/load the declared Hugging Face models at runtime.
 
 ## Files Written
 

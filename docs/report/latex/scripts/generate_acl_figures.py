@@ -18,11 +18,11 @@ import numpy as np
 from PIL import Image
 
 
-ROOT = Path(__file__).resolve().parents[3]
-FIG_DIR = ROOT / "report" / "latex" / "figures"
-SCRIPT_DIR = ROOT / "report" / "latex" / "scripts"
-THIRD_MEETING_DIR = ROOT / "group_meetings" / "third_meeting "
-REPO = ROOT / "round18" / "reports" / "tutorial_rn_curves"
+ROOT = Path(__file__).resolve().parents[4]
+FIG_DIR = ROOT / "docs" / "report" / "latex" / "figures"
+SCRIPT_DIR = ROOT / "docs" / "report" / "latex" / "scripts"
+THIRD_MEETING_DIR = ROOT / "docs" / "group_meetings" / "third_meeting"
+REPO = ROOT / "docs" / "research" / "round18" / "reports" / "tutorial_rn_curves"
 TUTORIAL_CURVE_CSV = REPO / "tutorial_rn_curves_summary.csv"
 
 PALETTE = [
@@ -145,8 +145,8 @@ def _format_pct(v: float) -> str:
 
 def create_dataset_cost_overview(output: Path) -> None:
     third = _load_json(THIRD_MEETING_DIR / "third_tutorial_metrics.json")
-    train_counts = _extract_claim_counts(ROOT / "colab_notebooks" / "train-claims.json")
-    dev_counts = _extract_claim_counts(ROOT / "colab_notebooks" / "dev-claims.json")
+    train_counts = _extract_claim_counts(ROOT / "data" / "train-claims.json")
+    dev_counts = _extract_claim_counts(ROOT / "data" / "dev-claims.json")
 
     class_order = ["SUPPORTS", "REFUTES", "NOT_ENOUGH_INFO", "DISPUTED"]
     train_vals = [train_counts.get(x, 0) for x in class_order]
@@ -292,8 +292,8 @@ def _copy_from_source_with_crop(src: Path, out: Path, min_ratio: float, max_rati
 
 def create_staging_cost_benefit(output: Path) -> None:
     third = _load_json(THIRD_MEETING_DIR / "third_tutorial_metrics.json")["summary"]
-    n_claims = len(_load_json(ROOT / "colab_notebooks" / "dev-claims.json"))
-    n_evidence = len(_load_json(ROOT / "colab_notebooks" / "evidence.json"))
+    n_claims = len(_load_json(ROOT / "data" / "dev-claims.json"))
+    n_evidence = len(_load_json(ROOT / "data" / "evidence.json"))
 
     stages = [
         ("Candidate\npool", n_claims * 500, third["candidate"]["macro_recall@500"], PALETTE[0]),
@@ -333,6 +333,8 @@ def create_staging_cost_benefit(output: Path) -> None:
 def create_feature_fusion(output: Path) -> None:
     hand_metrics = _load_json(
         ROOT
+        / "docs"
+        / "research"
         / "round18"
         / "outputs"
         / "o_sparse"
@@ -360,7 +362,7 @@ def create_feature_fusion(output: Path) -> None:
     ordered = sorted(family_map.items(), key=lambda kv: kv[1], reverse=True)
 
     emb_summary = _load_json(
-        ROOT / "round18" / "reports" / "embedding_shallow_feature_kfold" / "embedding_shallow_feature_kfold_summary.json"
+        ROOT / "docs" / "research" / "round18" / "reports" / "embedding_shallow_feature_kfold" / "embedding_shallow_feature_kfold_summary.json"
     )
     emb_rows = {row["variant"]: row for row in emb_summary["rows"]}
     curves = _load_retrieval_curves()
@@ -431,7 +433,7 @@ def create_top64_diagnostic(output: Path) -> None:
 
 def create_shallow_complement(output: Path) -> None:
     _copy_from_source_with_crop(
-        FIG_DIR / "round18_revised_shallow_complement_two_panel_rn.png",
+        ROOT / "docs" / "group_meetings" / "second_meeting" / "figures" / "round18_revised_shallow_complement_two_panel_rn.png",
         output,
         2.6,
         3.0,

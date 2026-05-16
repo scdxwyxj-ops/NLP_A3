@@ -6,15 +6,15 @@ __pycache__/
 
 # Local course data and generated artifacts.
 data/*.json
-outputs/
-models/
-colab_notebooks/*.json
-colab_notebooks/outputs/
-colab_notebooks/*.executed.ipynb
+data/outputs/
+model/*
+!model/README.md
+submissions/resource/*.json
+submissions/resource/outputs/
+submissions/resource/*.executed.ipynb
 
 # Local agent/AI working notes. These are private project memory, not submission artifacts.
 .agent/
-agent_docs/
 Agent_docs/
 
 # Chinese/local writeups should stay local unless explicitly converted for submission.
@@ -34,15 +34,16 @@ Thumbs.db
 .playwright-mcp/
 
 # LaTeX build by-products and archived scratch figures.
-report/latex/*.aux
-report/latex/*.bbl
-report/latex/*.blg
-report/latex/*.log
-report/latex/*.out
-report/latex/scripts/__pycache__/
-report/latex/figures/*.png
-!report/latex/figures/acl_sparse_multigate.png
-!report/latex/figures/acl_staging_cost_benefit.png
-!report/latex/figures/acl_top64_diagnostic.png
-!report/latex/figures/acl_shallow_complement.png
-!report/latex/figures/acl_classifier_summary.png
+docs/report/COMP90042_report_latex*.zip
+docs/report/latex/*.aux
+docs/report/latex/*.bbl
+docs/report/latex/*.blg
+docs/report/latex/*.log
+docs/report/latex/*.out
+docs/report/latex/scripts/__pycache__/
+docs/report/latex/figures/*.png
+!docs/report/latex/figures/acl_sparse_multigate.png
+!docs/report/latex/figures/acl_staging_cost_benefit.png
+!docs/report/latex/figures/acl_top64_diagnostic.png
+!docs/report/latex/figures/acl_shallow_complement.png
+!docs/report/latex/figures/acl_classifier_summary.png

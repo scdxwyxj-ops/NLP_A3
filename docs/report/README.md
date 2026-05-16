@@ -1,8 +1,8 @@
 # Report Artifacts
 
 This directory contains the ACL-style report project. It is separate from
-`colab_notebooks/` so the Colab runtime bundle stays focused on the executable
-notebook and its README.
+`submissions/resource/` so the Colab runtime bundle stays focused on the
+executable notebook and its README.
 
 - `latex/report.tex`: report source.
 - `latex/report.pdf`: compiled report PDF.
@@ -14,7 +14,7 @@ notebook and its README.
 To rebuild the report locally:
 
 ```bash
-cd report/latex
+cd docs/report/latex
 python scripts/generate_acl_figures.py
 pdflatex -interaction=nonstopmode report.tex
 bibtex report
