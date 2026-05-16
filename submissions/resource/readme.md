@@ -8,13 +8,20 @@ directory.
 
 ## Files Read
 
-The notebook reads only course JSON files from this folder, or from common Colab upload locations such as the current working directory, `/content`, `/`, or `/root` when the same files are uploaded there:
+The notebook reads only course JSON files from this folder, from a local repo
+`data/` directory, or from common Colab upload locations such as the current
+working directory, `/content`, `/content/colab_notebooks`, Google Drive
+`COMP90042_A3_colab_data`, `/`, or `/root` when the same files are uploaded
+there:
 
 - `train-claims.json`
 - `dev-claims.json` or `test-claims-unlabelled.json`
 - `evidence.json`
 
-It does not read repository-level `docs/`, `data/`, `model/`, `src/`, saved ranked artifacts, or any path outside the selected notebook data folder. It does download/load the declared Hugging Face models at runtime.
+Apart from optional local course JSONs in `data/`, it does not read
+repository-level `docs/`, `model/`, `src/`, saved ranked artifacts, checkpoints,
+or generated outputs. It does download/load the declared Hugging Face models at
+runtime.
 
 ## Files Written
 
@@ -53,6 +60,11 @@ Set `A3_SAVE_ARTIFACTS=1` to also save these generated intermediate files for de
 Optional runtime control:
 
 - Top3 CE scoring uses a bounded candidate prefilter inside the notebook (`TOP3_CE_PREFILTER_K`, default 256).
+- Stage visualizations are enabled by default. Set `A3_VISUALIZE=0` to disable
+  matplotlib plots while keeping all prediction and metric outputs.
+- On labelled targets, the notebook reports the three course metrics from the
+  official README: Evidence Retrieval F-score `F`, Claim Classification
+  Accuracy `A`, and Harmonic Mean of `F` and `A`.
 
 For final prediction on test, set:
 
