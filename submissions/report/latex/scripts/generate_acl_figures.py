@@ -658,33 +658,18 @@ def create_classifier_summary(output: Path) -> None:
         for l, p, r, fi in zip(labels, precision, recall, f1)
     }
 
-    fig, (ax_raw, ax_norm, ax_bars) = plt.subplots(1, 3, figsize=_figsize(3300, 980), dpi=300)
+    fig, (ax_norm, ax_bars) = plt.subplots(1, 2, figsize=_figsize(2500, 980), dpi=300)
     set_style()
-
-    im = ax_raw.imshow(conf, cmap="Blues", aspect="auto")
-    ax_raw.set_title("Raw confusion")
-    ax_raw.set_xticks(np.arange(len(labels)))
-    ax_raw.set_yticks(np.arange(len(labels)))
-    ax_raw.set_xticklabels(labels, rotation=22, ha="right")
-    ax_raw.set_yticklabels(labels)
-    ax_raw.set_xlabel("Predicted")
-    ax_raw.set_ylabel("True")
-    for i in range(conf.shape[0]):
-        for j in range(conf.shape[1]):
-            color = "white" if conf[i, j] > conf.max() * 0.65 else "black"
-            ax_raw.text(j, i, f"{int(conf[i, j])}", ha="center", va="center", color=color, fontsize=7.8)
-    cbar = fig.colorbar(im, ax=ax_raw, fraction=0.046, pad=0.04)
-    cbar.ax.tick_params(labelsize=8)
-    cbar.set_label("Count")
 
     row_norm = np.divide(conf, conf.sum(axis=1, keepdims=True), out=np.zeros_like(conf), where=conf.sum(axis=1, keepdims=True) > 0)
     im_norm = ax_norm.imshow(row_norm, cmap="Blues", aspect="auto", vmin=0, vmax=1)
-    ax_norm.set_title("Row-normalized")
+    ax_norm.set_title("Row-normalized confusion")
     ax_norm.set_xticks(np.arange(len(labels)))
     ax_norm.set_yticks(np.arange(len(labels)))
     ax_norm.set_xticklabels(labels, rotation=22, ha="right")
     ax_norm.set_yticklabels(labels)
     ax_norm.set_xlabel("Predicted")
+    ax_norm.set_ylabel("True")
     for i in range(row_norm.shape[0]):
         for j in range(row_norm.shape[1]):
             color = "white" if row_norm[i, j] > 0.45 else "black"
