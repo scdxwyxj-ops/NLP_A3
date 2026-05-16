@@ -31,16 +31,18 @@
 \maketitle
 
 \begin{abstract}
-We present a Colab-runnable fact-checking system for climate-related claims.
-The system follows the third-meeting tutorial pipeline: sparse score-fused
-candidate retrieval, embedding and factual-cue reranking, bounded
-cross-encoder evidence selection, and a structured-evidence TF-IDF
-logistic regression classifier.  The final Colab-reproduced development run
-obtains 0.2021 evidence F-score, 0.5000 claim accuracy, 0.2879 harmonic mean,
-and 0.4659 classifier macro-F1.  The main lesson from the tutorial experiments
-is that evidence rank and shallow factual cues are useful signals and should be
-preserved through the pipeline rather than discarded by plain evidence
-concatenation.
+We present a resource-aware fact-checking system for climate-related claims.
+The goal is to obtain a strong performance--time trade-off under limited
+compute, using a standard Colab-style runtime as a concrete example of this
+constraint.  Our system uses staged evidence processing: cheap sparse fusion
+keeps broad recall, embedding and factual-cue reranking compresses the evidence
+pool, a bounded cross-encoder pass selects submitted evidence, and a lightweight
+structured-evidence classifier predicts the final verdict.  Among our
+Colab-feasible variants, this design gives the strongest constrained result,
+obtaining 0.2021 evidence F-score, 0.5000 claim accuracy, 0.2879 harmonic mean,
+and 0.4659 classifier macro-F1.  The main finding is that evidence rank and
+shallow factual cues should be preserved through the pipeline rather than
+discarded by plain evidence concatenation.
 \end{abstract}
 
 \section{Introduction}
