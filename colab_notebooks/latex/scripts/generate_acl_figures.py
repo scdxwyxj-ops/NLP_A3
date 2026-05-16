@@ -510,7 +510,7 @@ def _class_report_from_matrix(matrix: List[List[float]]) -> Tuple[np.ndarray, np
 
 def create_classifier_summary(output: Path) -> None:
     cls = FINAL_COLAB_CLASSIFIER
-    labels = ["SUPPORTS", "REFUTES", "NOT_ENOUGH_INFO", "DISPUTED"]
+    labels = ["SUPPORTS", "REFUTES", "NEI", "DISPUTED"]
     conf = np.asarray(cls["confusion_matrix"], dtype=float)
     precision, recall, f1 = _class_report_from_matrix(conf)
     per_class = {

@@ -14,6 +14,11 @@
 \usepackage{graphicx}
 \usepackage{placeins}
 
+\newcommand{\LabelSupports}{\mbox{\textsc{Supports}}}
+\newcommand{\LabelRefutes}{\mbox{\textsc{Refutes}}}
+\newcommand{\LabelNEI}{\mbox{\textsc{NEI}}}
+\newcommand{\LabelDisputed}{\mbox{\textsc{Disputed}}}
+
 \title{AI Fact-Checking System}
 
 \author{
@@ -314,13 +319,13 @@ The final label is selected by the largest one-vs-rest decision score.  This
 keeps the classifier computationally small while preserving the rank and factual
 signals produced by the retrieval stages.
 
+\newpage
+
 \section{Results}
 
-The final notebook was run in Colab with GPU enabled.  It wrote
-\texttt{final\_predictions.json} and \texttt{run\_summary.json} under the
-Google Drive data folder.  Table~\ref{tab:retrieval} reports the main retrieval
-operating points and Table~\ref{tab:final} reports the reproduced development
-result.
+The final notebook was run in Colab with GPU enabled.
+Table~\ref{tab:retrieval} reports the main retrieval operating points and
+Table~\ref{tab:final} reports the reproduced development result.
 
 \begin{table}[t]
 \centering
@@ -360,15 +365,15 @@ Classifier macro-F1 & 0.4659 \\
 \centering
 \includegraphics[width=0.96\textwidth]{figures/acl_classifier_summary.png}
 \caption{Classifier errors concentrate among the three main labels.  The final
-Colab run performs best on \textsc{Supports}, while \textsc{Disputed} remains
+Colab run performs best on \LabelSupports{}, while \LabelDisputed{} remains
 difficult because it is rare and often depends on conflicting evidence.}
 \label{fig:final-classifier}
 \end{figure*}
 
 Figure~\ref{fig:final-classifier} explains the final classifier result beyond
 the aggregate accuracy.  The dominant remaining errors are confusions among
-\textsc{Supports}, \textsc{Refutes}, and \textsc{Not\_Enough\_Info}; the
-\textsc{Disputed} class is evaluated on only 18 development examples.
+\LabelSupports{}, \LabelRefutes{}, and \LabelNEI{}; the \LabelDisputed{} class
+is evaluated on only 18 development examples.
 
 \begin{table*}[t]
 \centering
