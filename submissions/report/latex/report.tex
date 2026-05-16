@@ -172,13 +172,47 @@ justifying its use for the classifier evidence context.}
 
 \subsection{Multi-Gate Sparse Candidate Retrieval}
 
-The sparse stage is designed for recall.  The BM25 equations below define the
-shared scoring operator used inside each sparse gate; they are not meant to say
-that the system has only one retrieval view.  The submitted candidate module
-uses four elementary gates--word, character, structured factual cues, and
-pseudo-relevance feedback--and the diagnostics also report the final RRF-fused
-candidate view as a fifth sparse view.  For term $t$ in document $d$, the
-evidence-side BM25 score is
+The sparse stage is designed for recall.  A gate is not a different scoring
+formula; it is a different feature construction for claim and evidence vectors.
+The four gates differ in feature construction, not in the underlying BM25
+scoring formula.  Let $a_g(\cdot)$ denote the analyzer for gate $g$, and let
+$q_g(c)$ and $x_g(d)$ be count vectors over the corresponding vocabulary
+$V_g$.  The submitted candidate module uses four elementary gates.
+
+\paragraph{Word gate.}
+The word gate extracts lexical word-level terms from the claim and evidence.
+It is the most direct retrieval view: overlap on content words gives high
+evidence scores, while the later IDF weighting discounts common words that have
+little discriminative value.
+
+\paragraph{Character gate.}
+The character gate represents text with character n-gram features.  This view
+captures partial string overlap, inflectional variants, hyphenation differences,
+and spelling variation that may be missed by exact word matching.
+
+\paragraph{Structured gate.}
+The structured gate keeps only shallow factual cues.  Its analyzer extracts
+tokens for numeric strings, years, salient capitalized terms, and negation
+markers.  This view is weak as a standalone retriever, but it supplies
+complementary factual constraints that lexical and character matching do not
+always preserve.
+
+\paragraph{Pseudo-relevance feedback gate.}
+The PRF gate starts from an initial word-gate retrieval and expands the claim
+with terms from the highest-ranked feedback evidence.  Abstractly, if
+$\mathcal{F}(c)$ is the feedback set for claim $c$, the expanded query is
+\[
+q_{\mathrm{prf}}(c)=q_{\mathrm{word}}(c)
+  + \eta\sum_{d\in\mathcal{F}(c)} w(c,d)x_{\mathrm{word}}(d),
+\]
+where $w(c,d)$ downweights lower-ranked feedback documents.  This adds related
+terms that are absent from the original claim while still using the sparse word
+space.
+
+\paragraph{Shared BM25 interaction.}
+After the four feature spaces are constructed, each gate uses the same
+BM25-style interaction between a claim vector and an evidence vector.  For term
+$t$ in document $d$, the evidence-side BM25 weight is
 \[
 \begin{aligned}
 \operatorname{idf}_t &=
@@ -189,27 +223,24 @@ evidence-side BM25 score is
 {f_{d,t}+k_1(1-b+b|d|/\overline{|d|})}.
 \end{aligned}
 \]
-The query side remains a count vector, so each gate score is a sparse dot
-product,
+The IDF term is part of BM25 rather than a separate retrieval method; it reduces
+the influence of high-frequency features because common terms carry less
+evidence-specific information.  The query side remains a count vector, so each
+gate score is a sparse dot product,
 \[
 s_g(c,d)=q_g(c)^\top \operatorname{BM25}_g(d).
 \]
-In the submitted notebook this is implemented with SciPy/NumPy sparse matrix
-operations rather than a Python postings loop.  The expensive document-frequency
-counts, BM25 reweighting, and query--document dot products are therefore handled
-by optimized C/C++ numerical kernels and vectorized array operations.  This
-implementation choice substantially accelerates the broad candidate stage while
-keeping the mathematical retrieval signal equivalent to the sparse gates
-described above.
+Here $g$ decides which vocabulary and vectors are used, while BM25 decides how
+the resulting features are weighted.  In the submitted notebook, these operations
+are implemented with SciPy/NumPy sparse matrices rather than Python postings
+lists.  Document-frequency counts, BM25 reweighting, and query--document dot
+products are therefore handled by optimized C/C++ numerical kernels and
+vectorized array operations.
 
-The elementary gates are complementary rather than redundant.  The word gate
-captures lexical content and short phrase matches.  The character gate is robust
-to word form variation and partial string overlap.  The structured gate isolates
-factual surface cues such as numbers, years, capitalized terms, and negation
-markers.  The pseudo-relevance feedback gate expands the claim using terms from
-the initial lexical retrieval results.  The fifth sparse view reported in the
-figures is the fused candidate pool, obtained by combining these elementary
-ranked lists with weighted reciprocal rank fusion:
+\paragraph{Rank fusion.}
+Each elementary gate produces a ranked evidence list.  The fifth sparse view
+reported in the figures is the fused candidate pool, obtained by combining
+these ranked lists with weighted reciprocal rank fusion:
 \[
 S_{\mathrm{RRF}}(c,d)=
 \sum_{g\in G}\frac{\lambda_g}{K_{\mathrm{RRF}}+r_g(c,d)},
@@ -450,6 +481,9 @@ Table~\ref{tab:final}, where $F=0.2021$, $A=0.5000$, and $H=0.2879$.
 
 \FloatBarrier
 
+\begingroup
+\small
 \bibliography{custom}
+\endgroup
 
 \end{document}
