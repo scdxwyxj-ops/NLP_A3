@@ -1,0 +1,209 @@
+{
+  "generated_from": [
+    "data/dev-claims.json",
+    "colab_notebooks/outputs/self_generated/target_sparse_fusion_top500.json",
+    "colab_notebooks/outputs/self_generated/target_top64_embedding_hand.json",
+    "colab_notebooks/outputs/self_generated/target_top3_ce_embedding_source_fusion.json"
+  ],
+  "curves": {
+    "candidate_final_sparse_fusion": {
+      "section": "candidate_sparse",
+      "method": "candidate_final_sparse_fusion",
+      "ks": [
+        1,
+        3,
+        5,
+        10,
+        20,
+        32,
+        64,
+        100,
+        500
+      ],
+      "points": [
+        {
+          "k": 1,
+          "macro_recall": 0.08149350649350649,
+          "hit_any": 0.18831168831168832,
+          "evidence_f": 0.1051948051948052
+        },
+        {
+          "k": 3,
+          "macro_recall": 0.1262987012987013,
+          "hit_any": 0.2792207792207792,
+          "evidence_f": 0.11043599257884973
+        },
+        {
+          "k": 5,
+          "macro_recall": 0.166991341991342,
+          "hit_any": 0.34415584415584416,
+          "evidence_f": 0.11048237476808907
+        },
+        {
+          "k": 10,
+          "macro_recall": 0.23722943722943723,
+          "hit_any": 0.45454545454545453,
+          "evidence_f": 0.09968040617391268
+        },
+        {
+          "k": 20,
+          "macro_recall": 0.31266233766233764,
+          "hit_any": 0.5584415584415584,
+          "evidence_f": 0.07656205924698302
+        },
+        {
+          "k": 32,
+          "macro_recall": 0.35454545454545455,
+          "hit_any": 0.6168831168831169,
+          "evidence_f": 0.05863325450796803
+        },
+        {
+          "k": 64,
+          "macro_recall": 0.43463203463203465,
+          "hit_any": 0.7272727272727273,
+          "evidence_f": 0.03778106610700211
+        },
+        {
+          "k": 100,
+          "macro_recall": 0.4882034632034632,
+          "hit_any": 0.7727272727272727,
+          "evidence_f": 0.02791232299347282
+        },
+        {
+          "k": 500,
+          "macro_recall": 0.6754329004329004,
+          "hit_any": 0.9025974025974026,
+          "evidence_f": 0.008273851035835562
+        }
+      ]
+    },
+    "top64_embedding_plus_shallow": {
+      "section": "top64_selector",
+      "method": "top64_embedding_plus_shallow",
+      "ks": [
+        1,
+        3,
+        5,
+        10,
+        20,
+        32,
+        50,
+        64
+      ],
+      "points": [
+        {
+          "k": 1,
+          "macro_recall": 0.1014069264069264,
+          "hit_any": 0.22727272727272727,
+          "evidence_f": 0.12878787878787878
+        },
+        {
+          "k": 3,
+          "macro_recall": 0.2172077922077922,
+          "hit_any": 0.42857142857142855,
+          "evidence_f": 0.18084415584415584
+        },
+        {
+          "k": 5,
+          "macro_recall": 0.2668831168831169,
+          "hit_any": 0.525974025974026,
+          "evidence_f": 0.17767470624613482
+        },
+        {
+          "k": 10,
+          "macro_recall": 0.36666666666666664,
+          "hit_any": 0.6818181818181818,
+          "evidence_f": 0.1506417824599643
+        },
+        {
+          "k": 20,
+          "macro_recall": 0.45984848484848484,
+          "hit_any": 0.7402597402597403,
+          "evidence_f": 0.11230042214514264
+        },
+        {
+          "k": 32,
+          "macro_recall": 0.5074675324675325,
+          "hit_any": 0.7987012987012987,
+          "evidence_f": 0.08372619392481882
+        },
+        {
+          "k": 50,
+          "macro_recall": 0.5574675324675324,
+          "hit_any": 0.8571428571428571,
+          "evidence_f": 0.062108822092678415
+        },
+        {
+          "k": 64,
+          "macro_recall": 0.5783549783549784,
+          "hit_any": 0.8636363636363636,
+          "evidence_f": 0.05173643362054943
+        }
+      ]
+    },
+    "top3_ce_prefilter_fusion": {
+      "section": "top3_selector",
+      "method": "top3_ce_prefilter_fusion",
+      "ks": [
+        1,
+        3,
+        5,
+        10,
+        20,
+        64,
+        100,
+        500
+      ],
+      "points": [
+        {
+          "k": 1,
+          "macro_recall": 0.10768398268398269,
+          "hit_any": 0.2597402597402597,
+          "evidence_f": 0.1406926406926407
+        },
+        {
+          "k": 3,
+          "macro_recall": 0.23549783549783548,
+          "hit_any": 0.4675324675324675,
+          "evidence_f": 0.20210265924551638
+        },
+        {
+          "k": 5,
+          "macro_recall": 0.29448051948051945,
+          "hit_any": 0.538961038961039,
+          "evidence_f": 0.19416615130900847
+        },
+        {
+          "k": 10,
+          "macro_recall": 0.39036796536796536,
+          "hit_any": 0.6688311688311688,
+          "evidence_f": 0.16510740341909172
+        },
+        {
+          "k": 20,
+          "macro_recall": 0.4877705627705628,
+          "hit_any": 0.7532467532467533,
+          "evidence_f": 0.11985706463685007
+        },
+        {
+          "k": 64,
+          "macro_recall": 0.5887445887445888,
+          "hit_any": 0.8571428571428571,
+          "evidence_f": 0.053076340051600925
+        },
+        {
+          "k": 100,
+          "macro_recall": 0.6228354978354979,
+          "hit_any": 0.8766233766233766,
+          "evidence_f": 0.0369069209274281
+        },
+        {
+          "k": 500,
+          "macro_recall": 0.6754329004329004,
+          "hit_any": 0.9025974025974026,
+          "evidence_f": 0.008273851035835562
+        }
+      ]
+    }
+  }
+}

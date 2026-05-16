@@ -8,8 +8,41 @@ __pycache__/
 data/*.json
 outputs/
 models/
+colab_notebooks/*.json
+colab_notebooks/outputs/
+colab_notebooks/*.executed.ipynb
+
+# Local agent/AI working notes. These are private project memory, not submission artifacts.
+.agent/
+agent_docs/
+Agent_docs/
+
+# Chinese/local writeups should stay local unless explicitly converted for submission.
+docs/zh/
+docs/cn/
+docs/*_zh.md
+docs/*_cn.md
+docs/*chinese*.md
+docs/*Chinese*.md
 
 # Notebook checkpoints and OS files.
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+
+# Local browser automation/cache output.
+.playwright-mcp/
+
+# LaTeX build by-products and archived scratch figures.
+colab_notebooks/latex/*.aux
+colab_notebooks/latex/*.bbl
+colab_notebooks/latex/*.blg
+colab_notebooks/latex/*.log
+colab_notebooks/latex/*.out
+colab_notebooks/latex/scripts/__pycache__/
+colab_notebooks/latex/figures/*.png
+!colab_notebooks/latex/figures/acl_sparse_multigate.png
+!colab_notebooks/latex/figures/acl_staging_cost_benefit.png
+!colab_notebooks/latex/figures/acl_top64_diagnostic.png
+!colab_notebooks/latex/figures/acl_shallow_complement.png
+!colab_notebooks/latex/figures/acl_classifier_summary.png

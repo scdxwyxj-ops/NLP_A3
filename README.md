@@ -378,5 +378,3 @@ The FAQ will be updated based on students’ questions.
 To support your learning, we will summarise common questions and provide answers on the discussion board.
 
 **FAQ Discussion Board Summary:** The link will be shared 2–3 days after the assignment specification release.
-
-fksnfnas

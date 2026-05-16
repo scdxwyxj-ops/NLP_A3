@@ -1,0 +1,97 @@
+{
+  "agent_id": "master",
+  "agent_role": "orchestrator",
+  "command": "python -m round18.tools.raw_json_smoke",
+  "config_hash": "",
+  "config_path": "",
+  "cv_seed": null,
+  "data_flow_summary": "Loaded raw course JSON files and wrote count/hash summary only.",
+  "fold_policy": "",
+  "forbidden_input_scan": {
+    "notes": "Only raw data file paths were scanned.",
+    "passed": true
+  },
+  "git_commit": "e50c071de28ffd177c00ef374d8046d4e41796ec",
+  "git_status_short": "M experiments/classification/build_evidence_package.py\n M experiments/neural/train_concat_transformer_classifier.py\n M notebooks/GroupID_COMP90042_Project_2026.ipynb\n?? docs/round16_colab_pipeline_tutorial.md\n?? experiments/neural/predict_concat_transformer_classifier.py\n?? experiments/rerank/round17_clean_parallel_aggregator.py\n?? experiments/rerank/round17_flat_equivalent_aggregator.py\n?? experiments/rerank/round17_leaf_flat_distilled_aggregator.py\n?? \"group_meetings/second_meeting /\"\n?? notebooks/round16_colab_full_pipeline.ipynb\n?? notebooks/round16_colab_multisource_top3_diagnostic.ipynb\n?? round18/\n?? submissions/",
+  "input_files": [
+    {
+      "labels_used": true,
+      "path": "data/train-claims.json",
+      "sha256": "dabdcd3364fcda2b7963aa616e6a025df5779bfa7f7accc89f8ba49361f93604",
+      "split": "train"
+    },
+    {
+      "labels_used": true,
+      "path": "data/dev-claims.json",
+      "sha256": "ea9976e861095c5856a13773d15cf149c9b961d4afaf36be2e8b22d2e1ec1fe4",
+      "split": "dev"
+    },
+    {
+      "labels_used": false,
+      "path": "data/test-claims-unlabelled.json",
+      "sha256": "18f6d181fe9d7724fb09e4c39f7cc7fee42b4b98b0dda3bc1c9d052e3006267f",
+      "split": "test"
+    },
+    {
+      "labels_used": false,
+      "path": "data/evidence.json",
+      "sha256": "73cd238e235ce0c89547b5587ca0e31e0d723c74afba6af611a8f9e5b944781f",
+      "split": "evidence"
+    }
+  ],
+  "leakage_risk": "low",
+  "metrics": {
+    "dev": {
+      "claims": 154,
+      "claims_with_evidence": 154,
+      "label_counts": {
+        "DISPUTED": 18,
+        "NOT_ENOUGH_INFO": 41,
+        "REFUTES": 27,
+        "SUPPORTS": 68
+      },
+      "labelled_claims": 154
+    },
+    "evidence": {
+      "evidence_items": 1208827
+    },
+    "test": {
+      "claims": 153,
+      "claims_with_evidence": 0,
+      "label_counts": {},
+      "labelled_claims": 0
+    },
+    "train": {
+      "claims": 1228,
+      "claims_with_evidence": 1228,
+      "label_counts": {
+        "DISPUTED": 124,
+        "NOT_ENOUGH_INFO": 386,
+        "REFUTES": 199,
+        "SUPPORTS": 519
+      },
+      "labelled_claims": 1228
+    }
+  },
+  "mode": "STRICT",
+  "model_names": [],
+  "notes": "",
+  "output_files": [
+    "round18/outputs/batch1_smoke/raw_json_summary.json",
+    "round18/manifests/batch1_smoke/run_manifest.json"
+  ],
+  "random_seed": null,
+  "reproducibility_risk": "low",
+  "round": "round18",
+  "run_id": "batch1_raw_json_smoke",
+  "runtime": {
+    "device": "",
+    "peak_memory_mb": null,
+    "wall_seconds": 3.48537
+  },
+  "split_isolation_summary": "No training, validation, model selection, or test content inspection was performed. Labels were counted for train/dev only as a smoke summary.",
+  "stage": "batch1_smoke",
+  "status": "strict-candidate",
+  "timestamp_utc": "2026-05-08T14:12:27+00:00",
+  "working_directory": "/mnt/a/code/NLP/A3"
+}

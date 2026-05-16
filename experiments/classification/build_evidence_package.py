@@ -46,10 +46,10 @@ def context_from_ranked(ranked_candidates, claim_id, evidence, top_k, include_se
         evidence_id = item["evidence_id"]
         record = {
             "evidence_id": evidence_id,
-            "rank": item.get("minilm_rank"),
+            "rank": item.get("minilm_rank", item.get("rank")),
             "bm25_rank": item.get("bm25_rank"),
             "bm25_score": item.get("bm25_score"),
-            "reranker_score": item.get("minilm_score"),
+            "reranker_score": item.get("minilm_score", item.get("score")),
             "text": evidence[evidence_id],
         }
         if include_semantic:
@@ -78,7 +78,11 @@ def build_rows(
                 context_top_k,
                 include_semantic,
             )
-            final_ids = [item["evidence_id"] for item in context[:final_top_k]]
+            final_ids = (
+                ids_from_predictions(final_predictions, claim_id, final_top_k)
+                if final_predictions is not None
+                else [item["evidence_id"] for item in context[:final_top_k]]
+            )
         else:
             context = context_from_predictions(
                 context_predictions,
