@@ -98,9 +98,9 @@ Existing work can be organized into four areas:
 \end{enumerate}
 
 Our design follows this literature but is driven by the Colab constraint.  The
-first stage is a broad sparse candidate gate.  It fuses word matching,
+first stage is a broad sparse candidate module.  It fuses word matching,
 character matching, structured factual cues, and pseudo-relevance feedback with
-fixed reciprocal rank fusion weights.  This gate is unsupervised, cheap, and
+fixed reciprocal rank fusion weights.  This module is unsupervised, cheap, and
 broad enough to preserve evidence coverage before neural scoring.  The second
 and third stages are hierarchical rerankers: the broad pool is compressed into
 a smaller classifier context, and a bounded cross-encoder pass then selects the
@@ -153,9 +153,13 @@ classifier converts the selected evidence context into a verdict label.
 
 \subsection{Multi-Gate Sparse Candidate Retrieval}
 
-The sparse stage is designed for recall.  Each gate represents the claim and the
-evidence corpus with a different analyzer, then scores candidates with BM25.  For
-term $t$ in document $d$, the evidence-side score is
+The sparse stage is designed for recall.  The BM25 equations below define the
+shared scoring operator used inside each sparse gate; they are not meant to say
+that the system has only one retrieval view.  The submitted candidate module
+uses four elementary gates--word, character, structured factual cues, and
+pseudo-relevance feedback--and the diagnostics also report the final RRF-fused
+candidate view as a fifth sparse view.  For term $t$ in document $d$, the
+evidence-side BM25 score is
 \[
 \begin{aligned}
 \operatorname{idf}_t &=
@@ -171,17 +175,22 @@ product,
 \[
 s_g(c,d)=q_g(c)^\top \operatorname{BM25}_g(d).
 \]
-This matrix formulation is important for the submitted notebook: it keeps the
-candidate stage vectorized and avoids materializing a large Python postings
-structure.
+In the submitted notebook this is implemented with SciPy/NumPy sparse matrix
+operations rather than a Python postings loop.  The expensive document-frequency
+counts, BM25 reweighting, and query--document dot products are therefore handled
+by optimized C/C++ numerical kernels and vectorized array operations.  This
+implementation choice substantially accelerates the broad candidate stage while
+keeping the mathematical retrieval signal equivalent to the sparse gates
+described above.
 
-The gates are complementary rather than redundant.  The word gate captures
-lexical content and short phrase matches.  The character gate is robust to word
-form variation and partial string overlap.  The structured gate isolates factual
-surface cues such as numbers, years, capitalized terms, and negation markers.
-The pseudo-relevance feedback gate expands the claim using terms from the
-initial lexical retrieval results.  Their ranked lists are combined with
-weighted reciprocal rank fusion:
+The elementary gates are complementary rather than redundant.  The word gate
+captures lexical content and short phrase matches.  The character gate is robust
+to word form variation and partial string overlap.  The structured gate isolates
+factual surface cues such as numbers, years, capitalized terms, and negation
+markers.  The pseudo-relevance feedback gate expands the claim using terms from
+the initial lexical retrieval results.  The fifth sparse view reported in the
+figures is the fused candidate pool, obtained by combining these elementary
+ranked lists with weighted reciprocal rank fusion:
 \[
 S_{\mathrm{RRF}}(c,d)=
 \sum_{g\in G}\frac{\lambda_g}{K_{\mathrm{RRF}}+r_g(c,d)},
