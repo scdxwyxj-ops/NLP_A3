@@ -8,26 +8,46 @@ directory.
 
 ## Files Read
 
-The notebook reads only course JSON files from this folder, from a local repo
-`data/` directory, or from common Colab upload locations such as the current
-working directory, `/content`, `/content/colab_notebooks`, Google Drive
-`COMP90042_A3_colab_data`, `/`, or `/root` when the same files are uploaded
-there:
+Recommended Google Drive layout for Colab:
+
+```text
+MyDrive/NLP_A3/
+  data/
+    train-claims.json
+    dev-claims.json
+    test-claims-unlabelled.json
+    evidence.json
+  src/
+    GroupID_COMP90042_Project_2026.ipynb
+    requirements.txt
+    readme.md
+  outputs/
+    self_generated/
+```
+
+The notebook reads only course JSON files from `A3_DATA_DIR` when set,
+otherwise from `MyDrive/NLP_A3/data`, a local repo `data/` directory, or common
+Colab upload locations such as the current working directory, `/content`, and
+`/content/colab_notebooks`:
 
 - `train-claims.json`
 - `dev-claims.json` or `test-claims-unlabelled.json`
 - `evidence.json`
 
-Apart from optional local course JSONs in `data/`, it does not read
-repository-level `docs/`, `model/`, `src/`, saved ranked artifacts, checkpoints,
-or generated outputs. It does download/load the declared Hugging Face models at
-runtime.
+Apart from optional local course JSONs in `data/`, it does not read saved
+ranked artifacts, checkpoints, or generated outputs. It does download/load the
+declared Hugging Face models at runtime.
 
 ## Files Written
 
-Generated outputs, and optional debug intermediates when enabled, are written under:
+Generated outputs, and optional debug intermediates when enabled, are written
+under:
 
 - `outputs/self_generated/`
+
+In the recommended Drive layout this resolves to
+`MyDrive/NLP_A3/outputs/self_generated/`. In the local repo layout it remains
+under the selected local data directory unless `A3_OUTPUT_DIR` is set.
 
 By default, the notebook only saves:
 
@@ -71,3 +91,7 @@ For final prediction on test, set:
 ```bash
 A3_TARGET_FILE=test-claims-unlabelled.json
 ```
+
+The unlabelled test file is only needed for optional leaderboard/test
+prediction. It has no gold labels, so the notebook writes
+`final_predictions.json` and skips accuracy/F-score evaluation for that target.
