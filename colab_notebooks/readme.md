@@ -4,17 +4,17 @@ This folder contains a self-contained Colab notebook.
 
 ## Files Read
 
-The notebook reads only course JSON files from this folder, or from the current Colab working directory when the same files are uploaded there:
+The notebook reads only course JSON files from this folder, or from common Colab upload locations such as the current working directory, `/content`, `/`, or `/root` when the same files are uploaded there:
 
 - `train-claims.json`
 - `dev-claims.json` or `test-claims-unlabelled.json`
 - `evidence.json`
 
-It does not read `round18/`, repository `data/`, `submissions/`, `notebooks/`, saved ranked artifacts, or any path outside the selected notebook data folder.
+It does not read `round18/`, repository `data/`, `submissions/`, `notebooks/`, saved ranked artifacts, or any path outside the selected notebook data folder. It does download/load the declared Hugging Face models at runtime.
 
 ## Files Written
 
-All generated intermediates and predictions are written under:
+Generated outputs, and optional debug intermediates when enabled, are written under:
 
 - `outputs/self_generated/`
 
