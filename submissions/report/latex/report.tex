@@ -346,8 +346,7 @@ The course evaluation reports three official development metrics: evidence
 retrieval F-score $F$, claim classification accuracy $A$, and the H-score
 $H=2FA/(F+A)$, the harmonic mean used as the main leaderboard metric.
 Table~\ref{tab:retrieval} reports the main retrieval operating points and
-Table~\ref{tab:final} reports the reproduced official and diagnostic
-development results.
+Table~\ref{tab:final} reports the reproduced development results.
 
 \begin{table}[t]
 \centering
@@ -375,12 +374,13 @@ Metric & Value \\
 Evidence Retrieval F-score ($F$) & 0.2021 \\
 Claim Classification Accuracy ($A$) & 0.5000 \\
 Harmonic Mean of $F$ and $A$ ($H$) & 0.2879 \\
-Top-3 macro recall (diagnostic) & 0.2355 \\
-Classifier macro-F1 (diagnostic) & 0.4659 \\
+Top-3 Macro Recall & 0.2355 \\
+Classifier Macro-F1 & 0.4659 \\
 \bottomrule
 \end{tabular}
 \caption{Final Colab-reproduced development result.  $F$, $A$, and
-$H=2FA/(F+A)$ are the official course metrics; the other rows are diagnostics.}
+$H=2FA/(F+A)$ are the official course metrics; top-3 macro recall and
+classifier macro-F1 are included to show retrieval and classification behavior.}
 \label{tab:final}
 \end{table}
 
