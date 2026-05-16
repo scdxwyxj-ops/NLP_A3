@@ -1,6 +1,8 @@
 # Project Docs
 
-This directory is for human-facing project documentation that should be shared with teammates or adapted into the final report.
+This directory is for human-facing project documentation that should be shared
+with teammates or used as background material for the report. The current
+report project itself lives under `submissions/report/latex/`.
 
 Use this directory for stable project documentation that is useful to the team.
 
@@ -15,5 +17,5 @@ Use this directory for stable project documentation that is useful to the team.
 - `round08_acceptance_report.md`: Round08 error layer, feature fusion reranker, and classifier context acceptance results.
 - `round09_acceptance_report.md`: Round09 alpha-blend, top100 scope, REFUTES calibration, and classifier-context results.
 - `round10_neural_baseline_report.md`: Round10 neural classifier and claim-evidence verifier baseline results.
-- `../agent_docs/rounds/round10/round10_acceptance_tables.md`: standalone Round10 acceptance tables for team communication.
-- `../agent_docs/rounds/round10/round10_report_c_full_experiment_paper.md`: full Round10 evidence/classifier experiment report with figures.
+Local agent memory is kept under `.agent/` and is not part of the shared
+repository documentation.

@@ -7,10 +7,10 @@ This repository is organized around the final Colab submission and the report.
 ```text
 assets/                 Shared static assets and versioned experiment configs.
 data/                   Local course data and generated outputs; ignored by Git.
-docs/                   Report, course spec mirror, meeting notes, and research archives.
+docs/                   Course spec mirror, meeting notes, and research archives.
 model/                  Local checkpoints; ignored by Git.
 src/                    Reusable code, experiment scripts, tests, and helper tools.
-submissions/            Final submission zip and the exact source files used to build it.
+submissions/            Final submission zip, report project, and exact source files.
 ```
 
 Agent memory and local automation state live under hidden directories such as

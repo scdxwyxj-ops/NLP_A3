@@ -3,13 +3,13 @@
 ```txt
 assets/                 Shared static assets and versioned experiment configs
 data/                   Local course data and generated outputs; ignored by Git
-docs/                   Report, meeting notes, course spec mirror, and research archives
+docs/                   Meeting notes, course spec mirror, and research archives
 model/                  Local checkpoints; ignored by Git
 src/a3_factcheck/       Reusable pipeline code
 src/experiments/        Runnable experiment scripts and historical development code
 src/tests/              Lightweight tests for reusable code
 src/tools/              Helper scripts, including the course evaluation script
-submissions/            Final code submission zip and its exact source files
+submissions/            Final code submission zip, report project, and exact source files
 .agent/                 Local agent state and project memory; ignored by Git
 ```
 
