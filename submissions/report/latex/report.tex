@@ -36,6 +36,52 @@ We demonstrate an efficient resource-optimized pipeline involving fact-checking 
 
 \section{Introduction}
 
+Climate claims are short, compressed, and evidence-sensitive; a useful
+fact-checker must retrieve evidence as well as predict a label.  Practical
+systems also face limited compute, making staged retrieval and bounded neural
+scoring central to the design.  In this project, the system is fully
+self-contained at run time and generates ranked pools during notebook
+execution.  The problem is therefore a three-way trade-off among evidence
+recall, verdict accuracy, and runtime.
+
+\textbf{Draft note}: I collected and grouped the following papers for teammates
+to continue the related-work writing.
+
+Existing work can be organized into four areas:
+\begin{enumerate}
+    \item \textbf{Evidence-Based Fact Checking}
+    FEVER frames fact checking as joint evidence retrieval and verdict
+    prediction \citep{thorne2018fever}; CLIMATE-FEVER adds climate-specific
+    domain and retrieval challenges \citep{diggelmann2020climatefever}.
+
+    \item \textbf{Large-Scale Evidence Retrieval}
+    BM25 is fast and scalable \citep{robertson1994okapi}; reciprocal rank
+    fusion combines ranked lists without supervision \citep{cormack2009rrf}.
+    These methods provide efficient lexical recall for candidate generation.
+
+    \item \textbf{Neural Semantic Reranking}
+    Dense embeddings help when lexical overlap is limited
+    \citep{karpukhin2020dpr,reimers2019sentence}; cross-encoders model
+    claim--evidence interaction directly \citep{nogueira2019bert}.  We place
+    cross-encoder scoring after sparse prefiltering to concentrate neural
+    computation on promising pairs.
+
+    \item \textbf{Evidence Aggregation and Factual Cue Fusion}
+    Evidence aggregation studies passage combination before classification
+    \citep{zhou2019gear}.  Hybrid systems show lexical, semantic, and shallow
+    factual signals can be complementary \citep{lee2018improving,padia2018umbc}.
+\end{enumerate}
+
+Our design follows prior retrieval-and-reranking work and targets
+limited-compute execution.  It first builds a broad unsupervised sparse pool
+from word, character, structured, and PRF gates.  It then compresses this pool
+with MiniLM similarity plus factual features, applies a bounded cross-encoder
+after prefiltering, and classifies from rank-aware, cue-aware evidence text.
+Contributions: (i) a staged pipeline for the performance--runtime trade-off,
+(ii) multi-gate sparse retrieval, (iii) multi-scale reranking that fuses
+semantic and shallow factual signals, and (iv) diagnostics over sparse gates,
+fusion, evidence selection, and classifier sensitivity.
+
 Climate misinformation has become a growing issue online, especially with claims related to climate science and global warming. Since many of these claims are presented without reliable evidence, automated fact-checking systems are becoming more important. A fact-checking system not only needs to predict whether a claim is true or false, but also needs to retrieve evidence that supports the prediction. This makes the task more difficult because both retrieval quality and classification performance affect the final result. In this project, we developed an AI fact-checking system for climate-related claims using a staged retrieval and classification pipeline. The main goal of the project was to create a system that performs well while still being efficient enough to run on free Google Colab resources. So, instead of relying on one large model, the system combines sparse retrieval, semantic reranking, factual feature fusion, and lightweight classification. 
 
 The first stage of the pipeline retrieves a broad pool of evidence using several sparse retrieval methods, including BM25 word matching, character-based retrieval, structured factual retrieval, and pseudo-relevance feedback. These retrieval sources are then combined using reciprocal rank fusion to improve evidence recall. After retrieval, the evidence candidates are reranked using MiniLM semantic embeddings together with shallow factual features such as lexical overlap, number agreement, negation matching, and the source rank. To reduce computational cost, the cross-encoder model is only applied to a smaller subset of evidence candidates instead of scoring the entire evidence corpus. Finally, the selected evidence is converted into a structured context representation and passed into a TF-IDF logistic regression classifier to predict one of four labels: "SUPPORTS", "REFUTES", "NO-ENOUGH-INFO", or "DISPUTED". Overall, the project finds out how different retrieval methods, reranking strategies, and evidence representations impact the performance of fact–checking under limited compute constraints. 
