@@ -45,7 +45,7 @@ macro-F1.
 
 Climate misinformation has become a growing issue online, especially with claims related to climate science and global warming. Since many of these claims are presented without reliable evidence, automated fact-checking systems are becoming more important. A fact-checking system not only needs to predict whether a claim is true or false, but also needs to retrieve evidence that supports the prediction. This makes the task more difficult because both retrieval quality and classification performance affect the final result. In this project, we developed an AI fact-checking system for climate-related claims using a staged retrieval and classification pipeline. The main goal of the project was to create a system that performs well while still being efficient enough to run on free Google Colab resources. So, instead of relying on one large model, the system combines sparse retrieval, semantic reranking, factual feature fusion and lightweight classification. 
 
-The first stage of the pipeline retrieves a broad pool of evidence using several sparse retrieval methods, including BM25 word matching, character-based retrieval, structured factual retrieval and pseudo-relevance feedback. These retrieval sources are then combined using reciprocal rank fusion to improve evidence recall. After retrieval, the evidence candidates are reranked using MiniLM semantic embeddings together with shallow factual features such as lexical overlap, number agreement, negation matching and source rank. To reduce computational cost, the cross-encoder model is only applied to a smaller subset of evidence candidates instead of scoring the entire evidence corpus. Finally, the selected evidence is converted into a structured context representation and passed into a TF-IDF logistic regression classifier to predict one of four labels: SUPPORTS, REFUTES, NOT_ENOUGH_INFO or DISPUTED. Overall, the project investigates how different retrieval methods, reranking strategies and evidence representations affect fact–checking performance under limited compute constraints. 
+The first stage of the pipeline retrieves a broad pool of evidence using several sparse retrieval methods, including BM25 word matching, character-based retrieval, structured factual retrieval and pseudo-relevance feedback. These retrieval sources are then combined using reciprocal rank fusion to improve evidence recall. After retrieval, the evidence candidates are reranked using MiniLM semantic embeddings together with shallow factual features such as lexical overlap, number agreement, negation matching and source rank. To reduce computational cost, the cross-encoder model is only applied to a smaller subset of evidence candidates instead of scoring the entire evidence corpus. Finally, the selected evidence is converted into a structured context representation and passed into a TF-IDF logistic regression classifier to predict one of four labels: SUPPORTS, REFUTES, NO-ENOUGH-INFO or DISPUTED. Overall, the project investigates how different retrieval methods, reranking strategies and evidence representations affect fact–checking performance under limited compute constraints. 
 
 \section{Method}
 
@@ -263,7 +263,7 @@ The staged retrieval pipeline also helped reduce computational cost while still 
 
 The reranking experiments showed that combining semantic embeddings with shallow factual cues improved evidence selection quality. The top 64 selector comparison achieved the highest macro recall of 57.8%, outperforming both sparse cutoff retrieval and cross encoder plus cues. This suggests that semantic similarity alone was not enough for strong evidence ranking and that shallow factual features helped improve retrieval consistency. 
 
-The confusion matrix showed that the model performed best on the SUPPORTS class, while most classification errors occurred between SUPPORTS, REFUTES and NOT_ENOUGH_INFO. The DISPUTED class was the hardest to classify due to the smaller number of development examples and more ambiguous evidence relationships. 
+The confusion matrix showed that the model performed best on the SUPPORTS class, while most classification errors occurred between SUPPORTS, REFUTES and NOT-ENOUGH-INFO. The DISPUTED class was the hardest to classify due to the smaller number of development examples and more ambiguous evidence relationships. 
 
 The classifier ablation experiments also presented that structured evidence formatting improved classification performance compared to a plain evidence sequence. Plain context achieved 0.4351% accuracy and 0.3762 macro F1, while the enhanced structured context improved performance to 0.4935 accuracy and 0.4544 macro F1. The best diagnostic classifier result was achieved with C = 0.125, reaching 0.5195 accuracy and 0.4841 macro F1. 
 
@@ -375,6 +375,7 @@ context improves over plain context at $C=0.25$ (0.4935/0.4544 vs.
 0.4351/0.3762), and the development sweep selects $C=0.125$ (0.5195/0.4841).
 The reported Colab run is Table~\ref{tab:final}: $F=0.2021$, $A=0.5000$,
 $H=0.2879$.
+
 \newpage
 
 \section{Discussion and Critical Analysis}
