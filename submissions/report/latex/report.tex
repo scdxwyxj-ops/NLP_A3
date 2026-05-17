@@ -252,7 +252,7 @@ The largest decision score gives the label.  This keeps classification cheap
 while preserving retrieval rank and factual signals.
 
 \newpage
-
+\FloatBarrier
 \section{Results}
 
 The final system achieved an evidence retrieval F-score of 0.2021, claim classification accuracy of 0.5000, harmonic mean of 0.2879 and classifier macro-F2 score of 0.4679. Overall, these results showed that the system was able to balance evidence retrieval and classification performance while still remaining lightweight enough to run within Colab limitations. 
@@ -377,7 +377,7 @@ The reported Colab run is Table~\ref{tab:final}: $F=0.2021$, $A=0.5000$,
 $H=0.2879$.
 
 \newpage
-
+\FloatBarrier
 \section{Discussion and Critical Analysis}
 
 The results showed that evidence retrieval quality had a major impact on the overall performance. Better retrieval generally led to stronger classification performance because the classifier relied heavily on receiving relevant evidence. The staged retrieval architecture worked well because it balanced retrieval recall with computational efficiency by gradually reducing the evidence pool before applying more expensive neural reranking models. This allowed the system to maintain strong retrieval coverage without requiring full corpus neural scoring. 
