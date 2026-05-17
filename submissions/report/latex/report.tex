@@ -255,10 +255,19 @@ while preserving retrieval rank and factual signals.
 
 \section{Results}
 
-The final notebook was run in Colab with GPU enabled.  Course metrics are
-evidence F-score $F$, label accuracy $A$, and H-score $H=2FA/(F+A)$.
-Tables~\ref{tab:retrieval}--\ref{tab:final} report retrieval operating points
-and reproduced development results.
+The final system achieved an evidence retrieval F-score of 0.2021, claim classification accuracy of 0.5000, harmonic mean of 0.2879 and classifier macro-F2 score of 0.4679. Overall, these results showed that the system was able to balance evidence retrieval and classification performance while still remaining lightweight enough to run within Colab limitations. 
+
+The sparse retrieval experiments showed that combining multiple sparse retrieval methods improved evidence recall compared to using only a single retrieval source. From the sparse recall curves and top-500 recall graph, the fusion retriever achieved the highest macro recall of 67.5%. Character-based retrieval also performed strongly by itself with 66.5% recall, which suggests that climate claims benefited from partial word matching and scientific terminology matching.  Structured retrieval alone achieved lower recall, but it still slightly improved the overall fusion performance when combined with the other sparse retrieval methods. 
+
+The staged retrieval pipeline also helped reduce computational cost while still preserving useful evidence candidates. The sparse top-500 stage achieved 67.5% macro recall, while the reranked top-64 stage retained 57.8% macro recall. The final submitted top 3 evidence achieved an F-score of 0.2021. From the cost-benefit graph, it could be seen that gradually reducing the candidate pool helped avoid expensive full corpus neutral scoring while still maintaining strong retrieval coverage. 
+
+The reranking experiments showed that combining semantic embeddings with shallow factual cues improved evidence selection quality. The top 64 selector comparison achieved the highest macro recall of 57.8%, outperforming both sparse cutoff retrieval and cross encoder plus cues. This suggests that semantic similarity alone was not enough for strong evidence ranking and that shallow factual features helped improve retrieval consistency. 
+
+The confusion matrix showed that the model performed best on the SUPPORTS class, while most classification errors occurred between SUPPORTS, REFUTES and NOT_ENOUGH_INFO. The DISPUTED class was the hardest to classify due to the smaller number of development examples and more ambiguous evidence relationships. 
+
+The classifier ablation experiments also presented that structured evidence formatting improved classification performance compared to a plain evidence sequence. Plain context achieved 0.4351% accuracy and 0.3762 macro F1, while the enhanced structured context improved performance to 0.4935 accuracy and 0.4544 macro F1. The best diagnostic classifier result was achieved with C = 0.125, reaching 0.5195 accuracy and 0.4841 macro F1. 
+
+
 
 \begin{table}[t]
 \centering
