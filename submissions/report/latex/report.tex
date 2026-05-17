@@ -375,6 +375,23 @@ context improves over plain context at $C=0.25$ (0.4935/0.4544 vs.
 0.4351/0.3762), and the development sweep selects $C=0.125$ (0.5195/0.4841).
 The reported Colab run is Table~\ref{tab:final}: $F=0.2021$, $A=0.5000$,
 $H=0.2879$.
+\newpage
+
+\section{Discussion and Critical Analysis}
+
+The results showed that evidence retrieval quality had a major impact on the overall performance. Better retrieval generally led to stronger classification performance because the classifier relied heavily on receiving relevant evidence. The staged retrieval architecture worked well because it balanced retrieval recall with computational efficiency by gradually reducing the evidence pool before applying more expensive neural reranking models. This allowed the system to maintain strong retrieval coverage without requiring full corpus neural scoring. 
+
+One important finding was that sparse retrieval methods still performed strongly even when semantic reranking models were used later in the pipeline. Character-based retrieval achieved surprisingly high recall, most likely because climate-related claims often contain scientific terminology, abbreviations and numeric information that benefit from partial lexical matching. Reciprocal rank fusion also improved retrieval performance because different sparse retrieval methods captured complementary evidence relationships. 
+
+The reranking experiments showed that semantic similarity alone was insufficient for selecting string evidence. Embedding similarity could retrieve semantically related passages, but could still rank evidence containing incorrect numbers or opposite information. Adding shallow factual cues such as lexical overlap, number agreement and negation matching improved evidence ranking quality by helping preserve factual consistency between the claim and evidence. 
+
+The classifier ablation experiments also showed that structured evidence representation improved downstream performance. The enhanced context representation preserved evidence rank information and factual cue tokens, which helped the TF-IDF logistic regression classifier learn stronger evidence patterns compared to plain evidence. 
+
+However, the system still had several limitations. The evidence retrieval F-score remained relatively low, which showed that retrieving the exact annotated gold evidence passages was still difficult. The DISPUTED class also remained challenging due to class imbalance and more ambiguous evidence relationships with larger transformer models and more advanced end-to-end architectures. 
+
+Overall, the project showed that combining sparse retrieval, semantic reranking, factual feature fusion and structured evidence classification could create an effective and computationally efficient fact-checking pipeline for climate-related chains. 
+
+\section{Team Contributions}
 
 \FloatBarrier
 
