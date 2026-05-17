@@ -137,19 +137,30 @@ million development pairs.}
 
 The sparse stage maximizes recall by applying one BM25 scoring operator to
 multiple feature spaces.  The four gates differ in analyzer $a_g(\cdot)$ and
-vocabulary $V_g$.  Let $q_g(c)$ and $x_g(d)$ be the resulting count vectors.
+vocabulary $V_g$.  Let $q_g(c)$ and $x_g(d)$ be the resulting count vectors for
+claim $c$ and evidence document $d$.  For each gate, the notebook builds a
+claim matrix $Q_g$ and an evidence matrix $X_g$, reweights the evidence matrix
+with BM25, and computes batched sparse products $Q_gX_g^\top$ before retaining
+the top-ranked evidence rows per claim.
 
 \paragraph{Word gate.}
 Word terms give the direct lexical view: content-word overlap raises scores and
-IDF weighting emphasizes discriminative claim terms.
+IDF weighting emphasizes discriminative claim terms.  The analyzer removes
+English stop words and uses both unigrams and adjacent word bigrams, so phrase
+matches such as scientific terms or named processes can contribute as single
+features.
 
 \paragraph{Character gate.}
 Character n-grams capture partial overlap, inflection, hyphenation, and spelling
-variation missed by exact words.
+variation missed by exact words.  This gate uses word-boundary character
+n-grams, making it useful for abbreviations, compounds, and morphology in
+climate terminology.
 
 \paragraph{Structured gate.}
 Structured cues keep numbers, years, salient capitalized terms, and negation
-markers.  These cues add factual constraints that lexical views may lose.
+markers.  These are encoded as typed tokens such as year, number, entity-like,
+and negation features, so numeric or negation agreement can affect retrieval
+even when surrounding words differ.
 
 \paragraph{Pseudo-relevance feedback gate.}
 PRF expands the word query using high-ranked feedback evidence.  If
@@ -227,10 +238,15 @@ The shallow factual features are summarized as
 [\phi_{\mathrm{rank}},\phi_{\mathrm{lex}},\phi_{\mathrm{num}},
 \phi_{\mathrm{neg}},\phi_{\mathrm{len}},s_{\mathrm{emb}}].
 \]
-where the components encode source rank, lexical overlap, number match,
-negation compatibility, length mismatch, and embedding similarity.  A
-lightweight gradient-boosted matcher estimates $p_{\mathrm{feat}}(c,d)$, and the
-context score is
+Here $\phi_{\mathrm{rank}}$ is the reciprocal sparse-source rank,
+$\phi_{\mathrm{lex}}$ contains claim-normalized and evidence-normalized word
+overlap, $\phi_{\mathrm{num}}$ counts shared numeric strings,
+$\phi_{\mathrm{neg}}$ marks negation compatibility, and
+$\phi_{\mathrm{len}}$ records normalized character-length difference.  A
+lightweight gradient-boosted matcher is trained on gold claim--evidence pairs
+and sampled non-gold candidates from the training claims.  It estimates
+$p_{\mathrm{feat}}(c,d)$, the probability that a candidate is useful evidence
+under these shallow signals.  The context score is
 \[
 S_{\mathrm{ctx}}(c,d)=
 \alpha\,\widetilde{s}_{\mathrm{emb}}(c,d)
@@ -254,9 +270,12 @@ factual cues.}
 
 The submitted evidence stage uses a stricter operating point than the classifier
 context.  Cross-encoders jointly encode claim and evidence, so we reserve them
-for the sparse/embedding-prefiltered pool and normalize their scores within each
-claim.  The final evidence score fuses cross-encoder confidence, embedding
-confidence, embedding rank, and sparse source rank:
+for the sparse/embedding-prefiltered pool.  Candidate evidence text is truncated
+before tokenization, then claim--evidence pairs are scored in PyTorch batches.
+For each claim, raw cross-encoder logits and embedding similarities are
+min--max normalized over the candidate pool.  The final evidence score fuses
+cross-encoder confidence, embedding confidence, embedding rank, and sparse
+source rank:
 \[
 \begin{aligned}
 S_{\mathrm{sub}}(c,d)={}&
@@ -290,11 +309,14 @@ The classifier predicts from a bounded ordered evidence context:
 \[
 x_c=[\mathrm{claim}; z_1,z_1,\ldots,z_m,z_m,z_{m+1},\ldots,z_L],
 \]
-where top evidence is repeated to raise TF-IDF weight.  Each evidence line also
-gets a rank prefix plus word-overlap, numeric-match, and negation-match cue
-tokens.  The logistic model learns weights for these cue tokens from training
-data.  Let $v_c$ be the TF-IDF vector; a one-vs-rest logistic model learns one
-binary classifier per label:
+where the highest-ranked evidence lines are repeated to raise their TF-IDF
+weight.  The leading evidence receives a larger text budget, while later rows
+are truncated so the context keeps more distinct evidence items.  Each evidence
+line also gets a rank prefix plus cue tokens: a word-overlap bucket, number
+match or mismatch status, claim-number-only status, and negation compatibility.
+The logistic model learns weights for these cue tokens from training data.  Let
+$v_c$ be the TF-IDF vector; a one-vs-rest logistic model learns one binary
+classifier per label:
 \[
 P(y=k\mid c)=\sigma(\theta_k^\top v_c+b_k).
 \]
