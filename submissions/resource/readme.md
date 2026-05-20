@@ -2,7 +2,7 @@
 
 This folder contains a self-contained Colab notebook.
 The canonical submission zip built from these files is stored at
-`../COMP90042_teamname_resource.zip`. Report sources are kept separately under
+`../COMP90042_Group_131_resource.zip`. Report sources are kept separately under
 `../report/latex/` so they are not mixed into the Colab runtime
 directory.
 
@@ -18,7 +18,7 @@ MyDrive/NLP_A3/
     test-claims-unlabelled.json
     evidence.json
   src/
-    GroupID_COMP90042_Project_2026.ipynb
+    Group_131_COMP90042_Project_2026.ipynb
     requirements.txt
     readme.md
   outputs/

@@ -19,4 +19,4 @@ submissions/            Final code submission zip, report project, and exact sou
 - `src/experiments/` should contain runnable scripts that combine modules, choose hyperparameters, write outputs, and print metrics.
 - `data/outputs/` should be treated as generated artifacts. Keep important metrics in `docs/`.
 - `data/` and `model/` should stay local and should not be included in the final submission zip unless course instructions change.
-- `submissions/resource/` is the only source directory used to build `submissions/COMP90042_teamname_resource.zip`.
+- `submissions/resource/` is the only source directory used to build `submissions/COMP90042_Group_131_resource.zip`.

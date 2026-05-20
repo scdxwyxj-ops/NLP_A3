@@ -1,9 +1,9 @@
 # Submission Artifacts
 
-`COMP90042_teamname_resource.zip` is the canonical code submission archive. It
+`COMP90042_Group_131_resource.zip` is the canonical code submission archive. It
 contains only:
 
-- `GroupID_COMP90042_Project_2026.ipynb`
+- `Group_131_COMP90042_Project_2026.ipynb`
 - `requirements.txt`
 - `readme.md`
 
@@ -12,11 +12,11 @@ Build the zip from that directory with an explicit file list:
 
 ```bash
 cd submissions/resource
-zip -X ../COMP90042_teamname_resource.zip \
-  GroupID_COMP90042_Project_2026.ipynb \
+zip -X ../COMP90042_Group_131_resource.zip \
+  Group_131_COMP90042_Project_2026.ipynb \
   requirements.txt \
   readme.md
 ```
 
-The PDF report is tracked under `submissions/report/latex/report.pdf`; report source
-and Overleaf packaging are also under `submissions/report/latex/`.
+The final report PDF is tracked as `submissions/COMP90042_Group_131.pdf`.
+Report source and Overleaf packaging are under `submissions/report/latex/`.

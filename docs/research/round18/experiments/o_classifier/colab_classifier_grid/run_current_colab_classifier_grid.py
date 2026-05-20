@@ -25,7 +25,7 @@ from sklearn.svm import LinearSVC
 
 
 ROOT = Path(__file__).resolve().parents[4]
-NOTEBOOK = ROOT / "colab_notebooks" / "GroupID_COMP90042_Project_2026.ipynb"
+NOTEBOOK = ROOT / "colab_notebooks" / "Group_131_COMP90042_Project_2026.ipynb"
 OUT_DIR = ROOT / "round18" / "outputs" / "o_classifier" / "colab_classifier_grid"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_PATH = OUT_DIR / "current_colab_top64_cache.json"

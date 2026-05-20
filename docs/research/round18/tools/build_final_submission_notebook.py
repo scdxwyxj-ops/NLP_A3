@@ -7,7 +7,7 @@ import nbformat as nbf
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CANONICAL_NOTEBOOK_PATH = ROOT / "colab_notebooks" / "GroupID_COMP90042_Project_2026.ipynb"
+CANONICAL_NOTEBOOK_PATH = ROOT / "colab_notebooks" / "Group_131_COMP90042_Project_2026.ipynb"
 
 
 def md(text: str) -> nbf.NotebookNode:
@@ -406,7 +406,7 @@ def main() -> None:
     raise SystemExit(
         "This legacy artifact-backed notebook generator is disabled. "
         f"The canonical self-contained submission notebook is {CANONICAL_NOTEBOOK_PATH}. "
-        "Do not regenerate notebooks/ or submissions/COMP90042_teamname_resource/ from this script."
+        "Do not regenerate notebooks/ or submissions/COMP90042_Group_131_resource/ from this script."
     )
 
 

@@ -6,6 +6,7 @@ executable notebook and its README.
 
 - `latex/report.tex`: report source.
 - `latex/report.pdf`: compiled report PDF.
+- `../COMP90042_Group_131.pdf`: final PDF filename for submission.
 - `latex/overleaf_acl_report.zip`: Overleaf upload package.
 - `latex/figures/`: tracked figures used by the report.
 - `latex/scripts/generate_acl_figures.py`: script for regenerating report

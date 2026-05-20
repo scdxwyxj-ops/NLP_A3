@@ -1,6 +1,6 @@
 # Retrieval Figure Data Audit (third_meeting)
 
-目标：把 second_meeting 图表结构映射到当前 `GroupID_COMP90042_Project_2026.ipynb` 的提交版逻辑（candidate/top500 sparse fusion、top64 embedding+shallow、top3 CE 预过滤融合、Enhanced Context20），并只变更方法名、参数、数值与注释，不改 tutorial 文件。
+目标：把 second_meeting 图表结构映射到当前 `Group_131_COMP90042_Project_2026.ipynb` 的提交版逻辑（candidate/top500 sparse fusion、top64 embedding+shallow、top3 CE 预过滤融合、Enhanced Context20），并只变更方法名、参数、数值与注释，不改 tutorial 文件。
 
 ## 现有可用数据
 

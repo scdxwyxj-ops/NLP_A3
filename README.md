@@ -21,13 +21,13 @@ Agent memory and local automation state live under hidden directories such as
 The canonical code submission archive is:
 
 ```text
-submissions/COMP90042_teamname_resource.zip
+submissions/COMP90042_Group_131_resource.zip
 ```
 
 It contains exactly three root-level files:
 
 ```text
-GroupID_COMP90042_Project_2026.ipynb
+Group_131_COMP90042_Project_2026.ipynb
 requirements.txt
 readme.md
 ```
@@ -41,6 +41,7 @@ The ACL-style report project is under `submissions/report/latex/`.
 Useful report artifacts:
 
 ```text
+submissions/COMP90042_Group_131.pdf
 submissions/report/latex/report.tex
 submissions/report/latex/report.pdf
 submissions/report/latex/overleaf_acl_report.zip
@@ -52,6 +53,6 @@ Use these checks after structural changes:
 
 ```bash
 pytest -q
-unzip -t submissions/COMP90042_teamname_resource.zip
-zipinfo -1 submissions/COMP90042_teamname_resource.zip
+unzip -t submissions/COMP90042_Group_131_resource.zip
+zipinfo -1 submissions/COMP90042_Group_131_resource.zip
 ```
