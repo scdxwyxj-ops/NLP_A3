@@ -37,7 +37,24 @@
 \maketitle
 
 \begin{abstract}
-We demonstrate an efficient resource-optimized pipeline involving fact-checking for the climate-based claims executing in the free-tier of the Google Colab kernel runtime avoids any additional services, checkpoints of saved models, or already computed indexes. The system represents the issues of verdict predictions and retrieval of evidence below a constrained budget of compute via four staged parts: One multi-gate sparse retriever which applies a appropriately weighted reciprocal rank fusion over the views of BM25; the multi-scaling feature fusion reranker integrates similarity of sentence embedding and the shallow factual alignment cues involving numeric agreement, lexical overlapping, and the compatibility with the negation; the bounded cross-encoder selector only used on a candidate subset which is prefiltered; and TF-IDF which is a structured-organized logistic classifier which encodes the factual cue tokens and the rank of evidence as input signals that are explicit. In this respective development set, our best Colab-supporting configuration attains a solid evidence retrieval score of 0.2021, claim classification accuracy of 0.5000, harmonic mean of 0.2879, and the classifier macro-F1 score of 0.4659. The point to be noted is that we must safeguard the shallow factual cues and the evidence rank on the way via the pipeline, instead of throwing them through the concatenation of plain evidence, which uniformly enhances the performance of the classifier.
+We demonstrate an efficient resource-optimized pipeline involving fact-checking 
+for the climate-based claims executing in the free-tier of the Google Colab kernel 
+runtime avoids any additional services, checkpoints of saved models, or already 
+computed indexes. The system represents the issues of verdict predictions and 
+retrieval of evidence below a constrained budget of compute via four staged parts: 
+One multi-gate sparse retriever which applies a appropriately weighted reciprocal 
+rank fusion over the views of BM25; the multi-scaling feature fusion reranker 
+integrates similarity of sentence embedding and the shallow factual alignment cues 
+involving numeric agreement, lexical overlapping, and the compatibility with the 
+negation; the bounded cross-encoder selector only used on a candidate subset which
+is prefiltered; and TF-IDF which is a structured-organized logistic classifier which
+encodes the factual cue tokens and the rank of evidence as input signals that are
+explicit. In this respective development set, our best Colab-supporting configuration 
+attains a solid evidence retrieval score of 0.2021, claim classification accuracy of 
+0.5000, harmonic mean of 0.2879, and the classifier macro-F1 score of 0.4659. The 
+point to be noted is that we must safeguard the shallow factual cues and the evidence 
+rank on the way via the pipeline, instead of throwing them through the concatenation
+of plain evidence, which uniformly enhances the performance of the classifier.
 \end{abstract}
 
 \section{Introduction}
