@@ -73,7 +73,21 @@ The goal is not to build the strongest possible model in isolation, but to
 design a pipeline that gives a good balance between evidence recall, verdict
 accuracy, and runtime cost.
 
-% P2: Related work paragraph goes here.
+Prior work motivates each stage of this design.  FEVER formulates fact checking
+as joint evidence retrieval and verdict prediction, and CLIMATE-FEVER shows that
+climate claims add domain-specific retrieval challenges such as contested
+framing, numerical comparisons, and temporal qualifications
+\citep{thorne2018fever,diggelmann2020climatefever}.  Sparse retrieval methods
+such as BM25 provide scalable high-recall candidate generation, while reciprocal
+rank fusion combines heterogeneous lexical views without score calibration
+\citep{robertson1994okapi,cormack2009rrf}.  Dense bi-encoders and sentence
+embeddings improve semantic matching, and cross-encoders provide stronger
+claim--evidence interaction for smaller candidate pools
+\citep{karpukhin2020dpr,reimers2019sentence,nogueira2019bert}.  Evidence
+aggregation and hybrid fact-checking work further suggests that passage
+structure, lexical alignment, and shallow factual cues carry useful verification
+signals beyond raw text concatenation
+\citep{zhou2019gear,lee2018improving,padia2018umbc}.
 
 Motivated by the resource-constrained setting, our system adopts a staged design
 in which each module improves evidence quality under a bounded computational
