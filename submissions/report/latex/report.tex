@@ -2,7 +2,7 @@
 
 % ACL camera-ready style.  The local acl.sty and acl_natbib.bst files are copied
 % from https://github.com/acl-org/acl-style-files/.
-\usepackage{acl}
+\usepackage[final]{acl}
 
 \usepackage{times}
 \usepackage{latexsym}
@@ -50,8 +50,8 @@ negation; the bounded cross-encoder selector only used on a candidate subset whi
 is prefiltered; and TF-IDF which is a structured-organized logistic classifier which
 encodes the factual cue tokens and the rank of evidence as input signals that are
 explicit. In this respective development set, our best Colab-supporting configuration 
-attains a solid evidence retrieval score of 0.2021, claim classification accuracy of 
-0.5000, harmonic mean of 0.2879, and the classifier macro-F1 score of 0.4659. The 
+attains a solid evidence retrieval score of 0.2021, claim classification accuracy of
+0.5195, harmonic mean of 0.2910, and the classifier macro-F1 score of 0.4841. The
 point to be noted is that we must safeguard the shallow factual cues and the evidence 
 rank on the way via the pipeline, instead of throwing them through the concatenation
 of plain evidence, which uniformly enhances the performance of the classifier.
@@ -364,8 +364,8 @@ while preserving retrieval rank and factual signals.
 \subsection{Main Experimental Results}
 
 The final system achieved an evidence retrieval F-score of 0.2021, claim
-classification accuracy of 0.5000, a harmonic mean score of 0.2879, and a
-classifier macro-F1 score of 0.4659, as shown in Table~\ref{tab:final}.
+classification accuracy of 0.5195, a harmonic mean score of 0.2910, and a
+classifier macro-F1 score of 0.4841, as shown in Table~\ref{tab:final}.
 Overall, these results show that the system was able to balance retrieval
 performance and classification accuracy while still remaining lightweight
 enough to run within free Google Colab limitations. The sparse retrieval
@@ -466,10 +466,10 @@ the strict evidence set used for scoring.}
 Metric & Value \\
 \midrule
 Evidence Retrieval F-score ($F$) & 0.2021 \\
-Claim Classification Accuracy ($A$) & 0.5000 \\
-Harmonic Mean of $F$ and $A$ ($H$) & 0.2879 \\
+Claim Classification Accuracy ($A$) & 0.5195 \\
+Harmonic Mean of $F$ and $A$ ($H$) & 0.2910 \\
 Top-3 Macro Recall & 0.2355 \\
-Classifier Macro-F1 & 0.4659 \\
+Classifier Macro-F1 & 0.4841 \\
 \bottomrule
 \end{tabular}
 \caption{Final Colab-reproduced development result.  $F$, $A$, and
@@ -563,7 +563,7 @@ runtime for climate claim fact-checking under free Google Colab constraints.
 The final pipeline combines multi-gate sparse retrieval, feature-fusion
 reranking, bounded cross-encoder evidence selection, and structured TF-IDF
 classification. On the development set, it achieved evidence F-score 0.2021,
-claim accuracy 0.5000, harmonic mean 0.2879, and classifier macro-F1 0.4659.
+claim accuracy 0.5195, harmonic mean 0.2910, and classifier macro-F1 0.4841.
 
 The main conclusion is that retrieval signals should be carried forward rather
 than discarded. Multi-gate sparse fusion reached 67.5\% macro recall at top-500,
